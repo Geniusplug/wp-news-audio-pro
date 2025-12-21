@@ -1,8 +1,12 @@
 <?php
 /**
- * License Manager Class
+ * License Manager Class - Complete Rewrite
  * 
- * Handles Envato/CodeCanyon license verification
+ * Handles Envato/CodeCanyon license verification with:
+ * - Test code for localhost only
+ * - One domain per license enforcement
+ * - No fatal errors ever
+ * - Database-backed license storage
  * 
  * @package WP_News_Audio_Pro
  * @since 1.0.0
@@ -27,25 +31,18 @@ class WNAP_License_Manager {
     private $license_option = 'wnap_license';
     
     /**
-     * Envato API token
+     * Test code constant
      * 
      * @var string
      */
-    private $api_token = '';
+    const TEST_CODE = 'WNAP-DEV-TEST-2025';
     
     /**
-     * Envato item ID
+     * Test code expiration days
      * 
-     * @var string|null
+     * @var int
      */
-    private $item_id = null;
-    
-    /**
-     * Test license code
-     * 
-     * @var string
-     */
-    private $test_code = 'WNAP-DEV-TEST-2025';
+    private $test_expiration_days = 90;
     
     /**
      * Constructor
@@ -53,10 +50,14 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     public function __construct() {
-        // Safe initialization - no early WordPress function calls
-        add_action('admin_init', array($this, 'init_license_hooks'));
-        add_action('wp_ajax_wnap_activate_license', array($this, 'ajax_activate_license'));
-        add_action('wp_ajax_wnap_deactivate_license', array($this, 'ajax_deactivate_license'));
+        try {
+            // Safe initialization - no early WordPress function calls
+            add_action('admin_init', array($this, 'init_license_hooks'));
+            add_action('wp_ajax_wnap_activate_license', array($this, 'ajax_activate_license'));
+            add_action('wp_ajax_wnap_deactivate_license', array($this, 'ajax_deactivate_license'));
+        } catch (Exception $e) {
+            error_log('WNAP License Manager Constructor Error: ' . $e->getMessage());
+        }
     }
     
     /**
@@ -80,8 +81,170 @@ class WNAP_License_Manager {
     }
     
     /**
+     * Check if current domain is localhost
+     * 
+     * @return bool True if localhost, false otherwise
+     * @since 1.0.0
+     */
+    private function is_localhost() {
+        try {
+            $domain = $this->get_current_domain();
+            
+            // Check for localhost patterns
+            $localhost_patterns = array(
+                'localhost',
+                '127.0.0.1',
+                '::1',
+                '.local',
+                '.test',
+                '.dev',
+                '.localhost'
+            );
+            
+            foreach ($localhost_patterns as $pattern) {
+                if (strpos($domain, $pattern) !== false || $domain === $pattern) {
+                    return true;
+                }
+            }
+            
+            // Check if it's a local IP address
+            if (preg_match('/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/', $domain)) {
+                return true;
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log('WNAP: Error checking localhost: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Verify test code
+     * 
+     * @param string $code Test code to verify
+     * @return bool True if valid test code, false otherwise
+     * @since 1.0.0
+     */
+    private function verify_test_code($code) {
+        try {
+            // Test code only works on localhost
+            if (!$this->is_localhost()) {
+                return false;
+            }
+            
+            // Check if code matches
+            if ($code !== self::TEST_CODE) {
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('WNAP: Error verifying test code: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if license is registered to another domain
+     * 
+     * @param string $purchase_code Purchase code to check
+     * @return array|false Array with domain info if registered elsewhere, false otherwise
+     * @since 1.0.0
+     */
+    private function check_domain_registration($purchase_code) {
+        global $wpdb;
+        
+        try {
+            $table_name = $wpdb->prefix . 'wnap_licenses';
+            $current_domain = $this->get_current_domain();
+            
+            // Check if code is already registered
+            $existing = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT * FROM $table_name WHERE purchase_code = %s",
+                    $purchase_code
+                )
+            );
+            
+            if ($existing) {
+                // Check if it's registered to a different domain
+                if ($existing->domain !== $current_domain && $existing->status === 'active') {
+                    return array(
+                        'registered' => true,
+                        'domain' => $existing->domain,
+                        'status' => $existing->status
+                    );
+                }
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log('WNAP: Error checking domain registration: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Register license in database
+     * 
+     * @param string $purchase_code Purchase code
+     * @param string $domain Domain name
+     * @return bool True on success, false on failure
+     * @since 1.0.0
+     */
+    private function register_license_in_db($purchase_code, $domain) {
+        global $wpdb;
+        
+        try {
+            $table_name = $wpdb->prefix . 'wnap_licenses';
+            
+            // Check if already exists
+            $existing = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT * FROM $table_name WHERE purchase_code = %s",
+                    $purchase_code
+                )
+            );
+            
+            if ($existing) {
+                // Update existing record
+                $result = $wpdb->update(
+                    $table_name,
+                    array(
+                        'domain' => $domain,
+                        'status' => 'active',
+                        'updated_at' => current_time('mysql')
+                    ),
+                    array('purchase_code' => $purchase_code),
+                    array('%s', '%s', '%s'),
+                    array('%s')
+                );
+            } else {
+                // Insert new record
+                $result = $wpdb->insert(
+                    $table_name,
+                    array(
+                        'purchase_code' => $purchase_code,
+                        'domain' => $domain,
+                        'status' => 'active',
+                        'created_at' => current_time('mysql'),
+                        'updated_at' => current_time('mysql')
+                    ),
+                    array('%s', '%s', '%s', '%s', '%s')
+                );
+            }
+            
+            return $result !== false;
+        } catch (Exception $e) {
+            error_log('WNAP: Error registering license: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Verify purchase code with Envato API
-     * CRITICAL: Graceful error handling
+     * CRITICAL: Graceful error handling - no fatal errors
      * 
      * @param string $code Purchase code
      * @return array Result array with success status and message
@@ -89,13 +252,43 @@ class WNAP_License_Manager {
      */
     private function verify_with_envato($code) {
         try {
-            // Check test mode first
-            if ($this->is_test_mode() && $code === $this->test_code) {
-                $this->activate_test_license();
+            // Check test code first
+            if ($this->verify_test_code($code)) {
+                // Check if test license is expired
+                $license = $this->get_license_data();
+                if ($license && isset($license['type']) && $license['type'] === 'test') {
+                    $activated_at = isset($license['activated_at']) ? $license['activated_at'] : 0;
+                    $days_active = (time() - $activated_at) / DAY_IN_SECONDS;
+                    
+                    if ($days_active > $this->test_expiration_days) {
+                        return array(
+                            'success' => false,
+                            'message' => sprintf(
+                                __('Test license expired after %d days. Please purchase a license.', 'wp-news-audio-pro'),
+                                $this->test_expiration_days
+                            ),
+                            'action' => 'buy',
+                            'buy_url' => $this->get_buy_url()
+                        );
+                    }
+                }
+                
+                // Activate test license
+                $this->activate_test_license($code);
                 return array(
                     'success' => true,
-                    'message' => __('Test license activated', 'wp-news-audio-pro'),
+                    'message' => __('Test license activated successfully! Valid for 90 days.', 'wp-news-audio-pro'),
                     'type' => 'test'
+                );
+            }
+            
+            // Test code was entered but domain is not localhost
+            if ($code === self::TEST_CODE && !$this->is_localhost()) {
+                return array(
+                    'success' => false,
+                    'message' => __('Test code only works on localhost/development environments. Please use a valid purchase code on live sites.', 'wp-news-audio-pro'),
+                    'action' => 'buy',
+                    'buy_url' => $this->get_buy_url()
                 );
             }
             
@@ -109,10 +302,30 @@ class WNAP_License_Manager {
                 );
             }
             
-            // Use configured API token or fallback
-            $api_token = !empty(WNAP_ENVATO_API_TOKEN) ? WNAP_ENVATO_API_TOKEN : $this->api_token;
+            // Check if code is already registered to another domain
+            $domain_check = $this->check_domain_registration($code);
+            if ($domain_check && $domain_check['registered']) {
+                return array(
+                    'success' => false,
+                    'message' => sprintf(
+                        __('This license is already activated on %s. Please deactivate it there first or contact support.', 'wp-news-audio-pro'),
+                        esc_html($domain_check['domain'])
+                    ),
+                    'domain' => $domain_check['domain']
+                );
+            }
             
-            // Call Envato API
+            // Use configured API token
+            $api_token = WNAP_ENVATO_API_TOKEN;
+            
+            if (empty($api_token)) {
+                return array(
+                    'success' => false,
+                    'message' => __('API token not configured. Please contact support.', 'wp-news-audio-pro')
+                );
+            }
+            
+            // Call Envato API - CORRECT ENDPOINT
             $url = 'https://api.envato.com/v3/market/author/sale?code=' . urlencode($code);
             
             $response = wp_remote_get($url, array(
@@ -138,12 +351,12 @@ class WNAP_License_Manager {
             $body = wp_remote_retrieve_body($response);
             $data = json_decode($body);
             
-            // Handle response codes
+            // Handle response codes as per requirements
             if ($response_code === 404) {
                 // Purchase code not found
                 return array(
                     'success' => false,
-                    'message' => __('Purchase code not found. Please verify your code.', 'wp-news-audio-pro'),
+                    'message' => __('Purchase code not found. Please verify your code is correct.', 'wp-news-audio-pro'),
                     'action' => 'buy',
                     'buy_url' => $this->get_buy_url()
                 );
@@ -151,46 +364,58 @@ class WNAP_License_Manager {
             
             if ($response_code === 403 || $response_code === 401) {
                 // API authentication error (our side)
-                error_log('WNAP: API authentication failed');
+                error_log('WNAP: API authentication failed - Response code: ' . $response_code);
                 
                 return array(
                     'success' => false,
-                    'message' => __('Verification service error. Please contact support.', 'wp-news-audio-pro')
+                    'message' => __('Verification service error. Please contact support for assistance.', 'wp-news-audio-pro')
                 );
             }
             
             if ($response_code !== 200) {
                 // Other error
-                error_log('WNAP: Unexpected API response: ' . $response_code);
+                error_log('WNAP: Unexpected API response: ' . $response_code . ' - Body: ' . $body);
                 
                 return array(
                     'success' => false,
-                    'message' => __('Verification failed. Please try again later.', 'wp-news-audio-pro')
+                    'message' => __('Verification failed. Please try again later or contact support.', 'wp-news-audio-pro')
                 );
             }
             
             // Validate item ID (if set)
-            $item_id = !empty(WNAP_ENVATO_ITEM_ID) ? WNAP_ENVATO_ITEM_ID : $this->item_id;
-            if ($item_id && isset($data->item->id)) {
+            $item_id = WNAP_ENVATO_ITEM_ID;
+            if (!empty($item_id) && isset($data->item->id)) {
                 if ((string)$data->item->id !== (string)$item_id) {
                     return array(
                         'success' => false,
-                        'message' => __('This purchase code is for a different product.', 'wp-news-audio-pro'),
+                        'message' => __('This purchase code is for a different product. Please use the correct code.', 'wp-news-audio-pro'),
                         'action' => 'buy',
                         'buy_url' => $this->get_buy_url()
                     );
                 }
             }
             
-            // Success - prepare license data
+            // Success - register license in database
+            $current_domain = $this->get_current_domain();
+            $registered = $this->register_license_in_db($code, $current_domain);
+            
+            if (!$registered) {
+                return array(
+                    'success' => false,
+                    'message' => __('Failed to register license. Please try again or contact support.', 'wp-news-audio-pro')
+                );
+            }
+            
+            // Prepare license data
             $license_data = array(
                 'code' => $code,
-                'domain' => $this->get_current_domain(),
+                'domain' => $current_domain,
                 'activated_at' => current_time('timestamp'),
                 'buyer' => isset($data->buyer) ? sanitize_text_field($data->buyer) : '',
                 'purchase_date' => isset($data->sold_at) ? sanitize_text_field($data->sold_at) : '',
                 'supported_until' => isset($data->supported_until) ? sanitize_text_field($data->supported_until) : '',
-                'item_id' => isset($data->item->id) ? sanitize_text_field($data->item->id) : ''
+                'item_id' => isset($data->item->id) ? sanitize_text_field($data->item->id) : '',
+                'item_name' => isset($data->item->name) ? sanitize_text_field($data->item->name) : ''
             );
             
             // Save license (safely)
@@ -198,7 +423,7 @@ class WNAP_License_Manager {
             
             return array(
                 'success' => true,
-                'message' => __('License activated successfully!', 'wp-news-audio-pro'),
+                'message' => __('License activated successfully! All features are now available.', 'wp-news-audio-pro'),
                 'data' => $license_data
             );
             
@@ -207,8 +432,31 @@ class WNAP_License_Manager {
             
             return array(
                 'success' => false,
-                'message' => __('An unexpected error occurred. Please try again.', 'wp-news-audio-pro')
+                'message' => __('An unexpected error occurred. Please try again or contact support.', 'wp-news-audio-pro')
             );
+        }
+    }
+    
+    /**
+     * Activate test license
+     * 
+     * @param string $code Test code
+     * @since 1.0.0
+     */
+    private function activate_test_license($code) {
+        try {
+            $license_data = array(
+                'code' => $code,
+                'domain' => $this->get_current_domain(),
+                'activated_at' => current_time('timestamp'),
+                'buyer' => 'Test User',
+                'type' => 'test',
+                'expires_at' => current_time('timestamp') + ($this->test_expiration_days * DAY_IN_SECONDS)
+            );
+            
+            $this->save_license($license_data);
+        } catch (Exception $e) {
+            error_log('WNAP: Error activating test license: ' . $e->getMessage());
         }
     }
     
@@ -245,12 +493,6 @@ class WNAP_License_Manager {
                 wp_schedule_event(time(), 'weekly', 'wnap_license_check_cron');
             }
             
-            // Create file integrity checksums
-            if (class_exists('WNAP_Security_Scanner')) {
-                $scanner = new WNAP_Security_Scanner();
-                $scanner->create_file_checksums();
-            }
-            
         } catch (Exception $e) {
             error_log('WNAP: Error saving license: ' . $e->getMessage());
         }
@@ -262,17 +504,30 @@ class WNAP_License_Manager {
      * @return bool True on success, false on failure
      * @since 1.0.0
      */
-    /**
-     * Deactivate license
-     * 
-     * @return bool True on success, false on failure
-     * @since 1.0.0
-     */
     public function deactivate_license() {
+        global $wpdb;
+        
         try {
+            // Get current license data
+            $license = $this->get_license_data();
+            
+            if ($license && isset($license['code']) && isset($license['type']) && $license['type'] !== 'test') {
+                // Update database to set status as inactive
+                $table_name = $wpdb->prefix . 'wnap_licenses';
+                $wpdb->update(
+                    $table_name,
+                    array('status' => 'inactive', 'updated_at' => current_time('mysql')),
+                    array('purchase_code' => $license['code']),
+                    array('%s', '%s'),
+                    array('%s')
+                );
+            }
+            
+            // Remove WordPress options
             delete_option($this->license_option);
             delete_option('wnap_license_status');
             wp_clear_scheduled_hook('wnap_license_check_cron');
+            
             return true;
         } catch (Exception $e) {
             error_log('WNAP: Deactivation error: ' . $e->getMessage());
@@ -302,48 +557,25 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     public function license_notice() {
-        $screen = get_current_screen();
-        if (!$screen || strpos($screen->id, 'news-audio-pro') === false) {
-            return;
+        try {
+            $screen = get_current_screen();
+            if (!$screen || strpos($screen->id, 'news-audio-pro') === false) {
+                return;
+            }
+            ?>
+            <div class="notice notice-warning is-dismissible">
+                <p>
+                    <strong><?php esc_html_e('WP News Audio Pro:', 'wp-news-audio-pro'); ?></strong>
+                    <?php esc_html_e('Please activate your license to unlock all features.', 'wp-news-audio-pro'); ?>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=news-audio-pro&tab=license')); ?>">
+                        <?php esc_html_e('Activate Now', 'wp-news-audio-pro'); ?>
+                    </a>
+                </p>
+            </div>
+            <?php
+        } catch (Exception $e) {
+            error_log('WNAP: Error showing license notice: ' . $e->getMessage());
         }
-        ?>
-        <div class="notice notice-warning is-dismissible">
-            <p>
-                <strong><?php esc_html_e('WP News Audio Pro:', 'wp-news-audio-pro'); ?></strong>
-                <?php esc_html_e('Please activate your license to unlock all features.', 'wp-news-audio-pro'); ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=news-audio-pro&tab=license')); ?>">
-                    <?php esc_html_e('Activate Now', 'wp-news-audio-pro'); ?>
-                </a>
-            </p>
-        </div>
-        <?php
-    }
-    
-    /**
-     * Check if test mode is enabled
-     * 
-     * @return bool
-     * @since 1.0.0
-     */
-    private function is_test_mode() {
-        return defined('WNAP_TEST_MODE') && WNAP_TEST_MODE === true;
-    }
-    
-    /**
-     * Activate test license
-     * 
-     * @since 1.0.0
-     */
-    private function activate_test_license() {
-        $license_data = array(
-            'code' => $this->test_code,
-            'domain' => $this->get_current_domain(),
-            'activated_at' => current_time('timestamp'),
-            'buyer' => 'Test User',
-            'type' => 'test'
-        );
-        
-        $this->save_license($license_data);
     }
     
     /**
@@ -354,13 +586,18 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function is_valid_code_format($code) {
-        // Envato codes are typically 36 characters (UUID format)
-        // or various other formats
-        if (strlen($code) < 10) {
+        try {
+            // Envato codes are typically 36 characters (UUID format)
+            // or various other formats, minimum 10 characters
+            if (strlen($code) < 10) {
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('WNAP: Error validating code format: ' . $e->getMessage());
             return false;
         }
-        
-        return true;
     }
     
     /**
@@ -370,7 +607,17 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function get_current_domain() {
-        return isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : 'unknown';
+        try {
+            $domain = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
+            
+            // Remove port if present
+            $domain = preg_replace('/:\d+$/', '', $domain);
+            
+            return $domain;
+        } catch (Exception $e) {
+            error_log('WNAP: Error getting domain: ' . $e->getMessage());
+            return 'unknown';
+        }
     }
     
     /**
@@ -380,14 +627,19 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function get_buy_url() {
-        $item_id = !empty(WNAP_ENVATO_ITEM_ID) ? WNAP_ENVATO_ITEM_ID : $this->item_id;
-        
-        if ($item_id) {
-            return 'https://codecanyon.net/item/wp-news-audio-pro/' . $item_id;
+        try {
+            $item_id = WNAP_ENVATO_ITEM_ID;
+            
+            if (!empty($item_id)) {
+                return 'https://codecanyon.net/item/wp-news-audio-pro/' . $item_id;
+            }
+            
+            // Fallback to generic CodeCanyon search
+            return 'https://codecanyon.net/search?term=wp+news+audio+pro';
+        } catch (Exception $e) {
+            error_log('WNAP: Error getting buy URL: ' . $e->getMessage());
+            return 'https://codecanyon.net/';
         }
-        
-        // Fallback to generic CodeCanyon search
-        return 'https://codecanyon.net/search?term=wp+news+audio+pro';
     }
     
     /**
@@ -399,11 +651,6 @@ class WNAP_License_Manager {
     public function is_license_valid() {
         try {
             $status = get_option('wnap_license_status', 'inactive');
-            
-            // Test mode always valid
-            if ($this->is_test_mode()) {
-                return true;
-            }
             
             if ($status !== 'active') {
                 return false;
@@ -418,6 +665,23 @@ class WNAP_License_Manager {
             // Check status
             if (!isset($license['status']) || $license['status'] !== 'active') {
                 return false;
+            }
+            
+            // Check if test license is expired
+            if (isset($license['type']) && $license['type'] === 'test') {
+                $activated_at = isset($license['activated_at']) ? $license['activated_at'] : 0;
+                $days_active = (time() - $activated_at) / DAY_IN_SECONDS;
+                
+                if ($days_active > $this->test_expiration_days) {
+                    $this->deactivate_license();
+                    return false;
+                }
+                
+                // Test license is valid only on localhost
+                if (!$this->is_localhost()) {
+                    $this->deactivate_license();
+                    return false;
+                }
             }
             
             // Check domain
@@ -467,13 +731,18 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     public function get_license_data() {
-        $encrypted = get_option($this->license_option, false);
-        
-        if (!$encrypted) {
+        try {
+            $encrypted = get_option($this->license_option, false);
+            
+            if (!$encrypted) {
+                return false;
+            }
+            
+            return $this->decrypt_license_data($encrypted);
+        } catch (Exception $e) {
+            error_log('WNAP: Error getting license data: ' . $e->getMessage());
             return false;
         }
-        
-        return $this->decrypt_license_data($encrypted);
     }
     
     /**
@@ -571,7 +840,7 @@ class WNAP_License_Manager {
             // Verify nonce
             if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wnap_admin_nonce')) {
                 wp_send_json_error(array(
-                    'message' => __('Security check failed', 'wp-news-audio-pro')
+                    'message' => __('Security check failed. Please refresh the page and try again.', 'wp-news-audio-pro')
                 ));
                 return;
             }
@@ -579,7 +848,7 @@ class WNAP_License_Manager {
             // Check permissions
             if (!current_user_can('manage_options')) {
                 wp_send_json_error(array(
-                    'message' => __('Unauthorized access', 'wp-news-audio-pro')
+                    'message' => __('Unauthorized access. You do not have permission to perform this action.', 'wp-news-audio-pro')
                 ));
                 return;
             }
@@ -589,7 +858,7 @@ class WNAP_License_Manager {
             
             if (empty($code)) {
                 wp_send_json_error(array(
-                    'message' => __('Please enter a purchase code', 'wp-news-audio-pro')
+                    'message' => __('Please enter a purchase code.', 'wp-news-audio-pro')
                 ));
                 return;
             }
@@ -605,10 +874,10 @@ class WNAP_License_Manager {
             
         } catch (Exception $e) {
             // Catch ALL errors - never break site
-            error_log('WNAP License Error: ' . $e->getMessage());
+            error_log('WNAP License Activation Error: ' . $e->getMessage());
             
             wp_send_json_error(array(
-                'message' => __('An error occurred. Please try again.', 'wp-news-audio-pro')
+                'message' => __('An unexpected error occurred. Please try again or contact support.', 'wp-news-audio-pro')
             ));
         }
     }
@@ -623,7 +892,7 @@ class WNAP_License_Manager {
             // Verify nonce
             if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wnap_admin_nonce')) {
                 wp_send_json_error(array(
-                    'message' => __('Security check failed', 'wp-news-audio-pro')
+                    'message' => __('Security check failed. Please refresh the page and try again.', 'wp-news-audio-pro')
                 ));
                 return;
             }
@@ -631,7 +900,7 @@ class WNAP_License_Manager {
             // Check capabilities
             if (!current_user_can('manage_options')) {
                 wp_send_json_error(array(
-                    'message' => __('Unauthorized', 'wp-news-audio-pro')
+                    'message' => __('Unauthorized. You do not have permission to perform this action.', 'wp-news-audio-pro')
                 ));
                 return;
             }
@@ -641,11 +910,11 @@ class WNAP_License_Manager {
             
             if ($deactivated) {
                 wp_send_json_success(array(
-                    'message' => __('License deactivated successfully', 'wp-news-audio-pro')
+                    'message' => __('License deactivated successfully. You can now activate it on a different domain.', 'wp-news-audio-pro')
                 ));
             } else {
                 wp_send_json_error(array(
-                    'message' => __('Failed to deactivate license', 'wp-news-audio-pro')
+                    'message' => __('Failed to deactivate license. Please try again or contact support.', 'wp-news-audio-pro')
                 ));
             }
             
@@ -653,7 +922,7 @@ class WNAP_License_Manager {
             error_log('WNAP: Deactivation error: ' . $e->getMessage());
             
             wp_send_json_error(array(
-                'message' => __('An error occurred', 'wp-news-audio-pro')
+                'message' => __('An unexpected error occurred. Please try again or contact support.', 'wp-news-audio-pro')
             ));
         }
     }
@@ -667,23 +936,28 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function generate_domain_fingerprint() {
-        $domain = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
-        $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : '';
-        $site_url = get_site_url();
-        $abspath = ABSPATH;
-        $auth_key = defined('AUTH_KEY') ? AUTH_KEY : '';
-        
-        // Combine all data
-        $fingerprint_data = implode('|', array(
-            $domain,
-            $server_ip,
-            $site_url,
-            $abspath,
-            $auth_key,
-        ));
-        
-        // Generate hash
-        return hash('sha256', $fingerprint_data);
+        try {
+            $domain = $this->get_current_domain();
+            $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : '';
+            $site_url = get_site_url();
+            $abspath = ABSPATH;
+            $auth_key = defined('AUTH_KEY') ? AUTH_KEY : '';
+            
+            // Combine all data
+            $fingerprint_data = implode('|', array(
+                $domain,
+                $server_ip,
+                $site_url,
+                $abspath,
+                $auth_key,
+            ));
+            
+            // Generate hash
+            return hash('sha256', $fingerprint_data);
+        } catch (Exception $e) {
+            error_log('WNAP: Error generating fingerprint: ' . $e->getMessage());
+            return hash('sha256', time());
+        }
     }
     
     /**
@@ -716,12 +990,12 @@ class WNAP_License_Manager {
         } catch (Exception $e) {
             error_log('WNAP: Signature generation error: ' . $e->getMessage());
             // Emergency fallback - better than fatal error
-            return hash('sha256', $code . $domain . $fingerprint);
+            return hash('sha256', $code . $domain . $fingerprint . time());
         }
     }
     
     /**
-     * Perform remote license validation (daily check)
+     * Perform remote license validation (weekly check)
      * 
      * @return bool True if validation passed, false otherwise
      * @since 1.0.0
@@ -732,6 +1006,11 @@ class WNAP_License_Manager {
             
             if (!$license || !isset($license['code'])) {
                 return false;
+            }
+            
+            // Skip validation for test licenses
+            if (isset($license['type']) && $license['type'] === 'test') {
+                return true;
             }
             
             // Check if we need to validate (once per day)
@@ -775,18 +1054,22 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function send_license_failure_email($reason) {
-        $admin_email = get_option('admin_email');
-        $site_name = get_bloginfo('name');
-        
-        $subject = sprintf('[%s] WP News Audio Pro - License Deactivated', $site_name);
-        
-        $message = "Your WP News Audio Pro license has been deactivated.\n\n";
-        $message .= "Reason: {$reason}\n\n";
-        $message .= "Please contact support to resolve this issue:\n";
-        $message .= "Email: info.geniusplugtechnology@gmail.com\n";
-        $message .= "WhatsApp: +880 1761 487193\n";
-        $message .= "Website: https://geniusplug.com/support/\n";
-        
-        wp_mail($admin_email, $subject, $message);
+        try {
+            $admin_email = get_option('admin_email');
+            $site_name = get_bloginfo('name');
+            
+            $subject = sprintf('[%s] WP News Audio Pro - License Deactivated', $site_name);
+            
+            $message = "Your WP News Audio Pro license has been deactivated.\n\n";
+            $message .= "Reason: {$reason}\n\n";
+            $message .= "Please contact support to resolve this issue:\n";
+            $message .= "Email: " . WNAP_SUPPORT_EMAIL . "\n";
+            $message .= "WhatsApp: " . WNAP_SUPPORT_WHATSAPP . "\n";
+            $message .= "Website: " . WNAP_SUPPORT_URL . "\n";
+            
+            wp_mail($admin_email, $subject, $message);
+        } catch (Exception $e) {
+            error_log('WNAP: Error sending failure email: ' . $e->getMessage());
+        }
     }
 }
