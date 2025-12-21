@@ -266,6 +266,9 @@ class WNAP_TTS_Engine {
             'zh-CN' => 'zh',
         );
         
+        // Allow developers to customize voice mapping
+        $voice_map = apply_filters('wnap_espeak_voice_map', $voice_map);
+        
         $voice = isset($voice_map[$language]) ? $voice_map[$language] : 'en-us';
         
         // Get speed and pitch settings

@@ -240,10 +240,21 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function encrypt_license_data($data) {
-        // Use base64 encoding for basic obfuscation
-        // In production, you should use stronger encryption
         $json = wp_json_encode($data);
-        return base64_encode($json);
+        
+        // Use WordPress salts for encryption key
+        $key = wp_salt('auth');
+        
+        // Simple XOR encryption with the salt
+        $encrypted = '';
+        $key_length = strlen($key);
+        $json_length = strlen($json);
+        
+        for ($i = 0; $i < $json_length; $i++) {
+            $encrypted .= chr(ord($json[$i]) ^ ord($key[$i % $key_length]));
+        }
+        
+        return base64_encode($encrypted);
     }
     
     /**
@@ -254,8 +265,25 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     private function decrypt_license_data($encrypted) {
-        $json = base64_decode($encrypted);
-        $data = json_decode($json, true);
+        $decoded = base64_decode($encrypted);
+        
+        if ($decoded === false) {
+            return false;
+        }
+        
+        // Use WordPress salts for decryption key
+        $key = wp_salt('auth');
+        
+        // Simple XOR decryption with the salt
+        $decrypted = '';
+        $key_length = strlen($key);
+        $decoded_length = strlen($decoded);
+        
+        for ($i = 0; $i < $decoded_length; $i++) {
+            $decrypted .= chr(ord($decoded[$i]) ^ ord($key[$i % $key_length]));
+        }
+        
+        $data = json_decode($decrypted, true);
         
         return is_array($data) ? $data : false;
     }

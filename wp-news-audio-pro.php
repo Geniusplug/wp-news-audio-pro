@@ -37,8 +37,9 @@ define('WNAP_VERSION', '1.0.0');
 define('WNAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WNAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WNAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
-define('WNAP_ENVATO_ITEM_ID', ''); // Update after CodeCanyon approval
+define('WNAP_ENVATO_ITEM_ID', defined('WNAP_ITEM_ID') ? WNAP_ITEM_ID : ''); // Update after CodeCanyon approval
 define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : ''); // Add via wp-config.php
+define('WNAP_SUPPORT_EMAIL', defined('WNAP_EMAIL') ? WNAP_EMAIL : 'support@example.com'); // Configure in wp-config.php
 
 /**
  * Main Plugin Class

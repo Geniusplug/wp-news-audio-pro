@@ -529,7 +529,7 @@ class WNAP_Admin_Settings {
             <h3><?php esc_html_e('Support', 'wp-news-audio-pro'); ?></h3>
             <p>
                 <?php esc_html_e('Need help? Contact our support team:', 'wp-news-audio-pro'); ?>
-                <a href="mailto:support@yoursite.com">support@yoursite.com</a>
+                <a href="mailto:<?php echo esc_attr(WNAP_SUPPORT_EMAIL); ?>"><?php echo esc_html(WNAP_SUPPORT_EMAIL); ?></a>
             </p>
         </div>
         <?php
@@ -567,7 +567,7 @@ class WNAP_Admin_Settings {
                 <tr>
                     <th scope="row"><?php esc_html_e('Support', 'wp-news-audio-pro'); ?></th>
                     <td>
-                        <a href="mailto:support@yoursite.com">support@yoursite.com</a>
+                        <a href="mailto:<?php echo esc_attr(WNAP_SUPPORT_EMAIL); ?>"><?php echo esc_html(WNAP_SUPPORT_EMAIL); ?></a>
                     </td>
                 </tr>
             </table>
