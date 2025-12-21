@@ -208,12 +208,18 @@ class WP_News_Audio_Pro {
             'auto_play' => false,
             'default_language' => 'en-US',
             'player_position' => 'popup',
+            'tts_engine' => 'web_speech',
             'voice_engine' => 'espeak',
             'speech_speed' => 1.0,
             'pitch' => 1.0,
             'volume' => 80,
             'audio_format' => 'mp3',
             'cache_duration' => 30,
+            'show_on_posts' => true,
+            'show_on_pages' => true,
+            'show_on_home' => false,
+            'exclude_pages' => '',
+            'exclude_urls' => '',
         );
         
         add_option('wnap_settings', $default_settings);
@@ -388,13 +394,27 @@ class WP_News_Audio_Pro {
      * @since 1.0.0
      */
     public function enqueue_frontend_assets() {
-        // Only load on single posts
-        if (!is_single()) {
+        // Check if licensed
+        if (!$this->license_guard || !$this->license_guard->is_licensed()) {
             return;
         }
         
-        // Check if licensed
-        if (!$this->license_guard || !$this->license_guard->is_licensed()) {
+        // Check if we should load on this page
+        $settings = get_option('wnap_settings', array());
+        $should_load = false;
+        
+        if (is_singular('post') && !empty($settings['show_on_posts'])) {
+            $should_load = true;
+        } elseif (is_page() && !empty($settings['show_on_pages'])) {
+            $should_load = true;
+        } elseif (is_front_page() && !empty($settings['show_on_home'])) {
+            $should_load = true;
+        } elseif (is_single()) {
+            // Default to showing on single posts if settings not configured
+            $should_load = true;
+        }
+        
+        if (!$should_load) {
             return;
         }
         
@@ -458,9 +478,6 @@ class WP_News_Audio_Pro {
             '3.7.8',
             true
         );
-        
-        // Get settings
-        $settings = get_option('wnap_settings', array());
         
         // Localize script
         wp_localize_script('wnap-frontend-script', 'wnapFrontend', array(

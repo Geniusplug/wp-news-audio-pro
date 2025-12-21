@@ -74,6 +74,12 @@ class WNAP_Admin_Settings {
             'wnap_settings',
             array($this, 'sanitize_settings')
         );
+        
+        // Register API key options separately
+        register_setting('wnap_settings_group', 'wnap_google_tts_api_key', 'sanitize_text_field');
+        register_setting('wnap_settings_group', 'wnap_aws_access_key', 'sanitize_text_field');
+        register_setting('wnap_settings_group', 'wnap_aws_secret_key', 'sanitize_text_field');
+        register_setting('wnap_settings_group', 'wnap_aws_region', 'sanitize_text_field');
     }
     
     /**
