@@ -330,6 +330,8 @@
     var currentSpeed = 1.0;
     var audioContent = '';
     var isPlaying = false;
+    var autoHideTimer = null;
+    var autoReopenTimer = null;
     
     /**
      * Initialize floating button
@@ -411,6 +413,13 @@
      */
     function openFloatingButton(callback) {
         var $fabOpen = $('.wnap-fab-open');
+        
+        // Clear any existing auto-reopen timer
+        if (autoReopenTimer) {
+            clearTimeout(autoReopenTimer);
+            autoReopenTimer = null;
+        }
+        
         $('.wnap-fab-closed').fadeOut(200, function() {
             // Remove hidden class and fade in
             // Note: fadeIn() will set display to 'block' and animate opacity
@@ -419,6 +428,9 @@
                 if (typeof callback === 'function') {
                     callback();
                 }
+                
+                // Start auto-hide timer if not playing
+                startAutoHideTimer();
             });
         });
     }
@@ -427,10 +439,69 @@
      * Close floating button
      */
     function closeFloatingButton() {
+        // Clear auto-hide timer
+        if (autoHideTimer) {
+            clearTimeout(autoHideTimer);
+            autoHideTimer = null;
+        }
+        
         $('.wnap-fab-open').fadeOut(200, function() {
             $(this).addClass('wnap-fab-hidden');
-            $('.wnap-fab-closed').fadeIn(300);
+            $('.wnap-fab-closed').fadeIn(300, function() {
+                // Start auto-reopen timer after closing
+                startAutoReopenTimer();
+            });
         });
+    }
+    
+    /**
+     * Start auto-hide timer
+     */
+    function startAutoHideTimer() {
+        // Clear any existing timer
+        if (autoHideTimer) {
+            clearTimeout(autoHideTimer);
+        }
+        
+        // Get auto-hide delay from settings (default 30 seconds)
+        var autoHideDelay = (wnapFrontend.settings && wnapFrontend.settings.auto_hide_delay) 
+            ? parseInt(wnapFrontend.settings.auto_hide_delay) * 1000 
+            : 30000;
+        
+        // Don't auto-hide if audio is playing
+        if (isPlaying) {
+            return;
+        }
+        
+        // Set timer to auto-hide
+        autoHideTimer = setTimeout(function() {
+            console.log('WNAP: Auto-hiding floating button');
+            closeFloatingButton();
+        }, autoHideDelay);
+    }
+    
+    /**
+     * Start auto-reopen timer
+     */
+    function startAutoReopenTimer() {
+        // Clear any existing timer
+        if (autoReopenTimer) {
+            clearTimeout(autoReopenTimer);
+        }
+        
+        // Get auto-reopen delay from settings (default 60 seconds)
+        var autoReopenDelay = (wnapFrontend.settings && wnapFrontend.settings.auto_reopen_delay) 
+            ? parseInt(wnapFrontend.settings.auto_reopen_delay) * 1000 
+            : 60000;
+        
+        // Set timer to auto-reopen
+        autoReopenTimer = setTimeout(function() {
+            console.log('WNAP: Auto-reopening floating button');
+            // Only reopen if not hidden forever
+            if (localStorage.getItem('wnap_fab_hidden') !== 'true') {
+                $('.wnap-fab-closed').fadeIn(300);
+            }
+        }, autoReopenDelay);
     }
     
     /**
@@ -505,6 +576,11 @@
         speechUtterance.onstart = function() {
             isPlaying = true;
             updatePlayPauseButtons();
+            // Clear auto-hide timer when playing
+            if (autoHideTimer) {
+                clearTimeout(autoHideTimer);
+                autoHideTimer = null;
+            }
             console.log('WNAP: Speech started');
         };
         
@@ -512,6 +588,8 @@
             isPlaying = false;
             updatePlayPauseButtons();
             resetProgress();
+            // Restart auto-hide timer when playback ends
+            startAutoHideTimer();
             console.log('WNAP: Speech ended');
         };
         
@@ -519,6 +597,8 @@
             console.error('WNAP: Speech synthesis error:', event);
             isPlaying = false;
             updatePlayPauseButtons();
+            // Restart auto-hide timer on error
+            startAutoHideTimer();
             // Show user-friendly error message
             var errorMsg = 'Unable to play audio. ';
             if (event.error === 'network') {
@@ -534,6 +614,8 @@
         speechUtterance.onpause = function() {
             isPlaying = false;
             updatePlayPauseButtons();
+            // Restart auto-hide timer when paused
+            startAutoHideTimer();
             console.log('WNAP: Speech paused');
         };
         
@@ -552,6 +634,8 @@
             speechSynthesis.pause();
             isPlaying = false;
             updatePlayPauseButtons();
+            // Restart auto-hide timer when paused
+            startAutoHideTimer();
         }
     }
     
@@ -564,6 +648,8 @@
             isPlaying = false;
             updatePlayPauseButtons();
             resetProgress();
+            // Restart auto-hide timer when stopped
+            startAutoHideTimer();
         }
     }
     
