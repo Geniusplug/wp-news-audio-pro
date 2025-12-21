@@ -168,12 +168,12 @@
                     initPlayer(audioUrl);
                     showPlayer();
                 } else {
-                    alert(response.data.message || wnapFrontend.strings.error);
+                    showNotification(response.data.message || wnapFrontend.strings.error, 'error');
                 }
             },
             error: function() {
                 hideLoadingOverlay();
-                alert(wnapFrontend.strings.error || 'An error occurred');
+                showNotification(wnapFrontend.strings.error || 'An error occurred', 'error');
             }
         });
     }
@@ -449,7 +449,7 @@
     function playAudio() {
         if (!speechSynthesis) {
             console.error('WNAP: Web Speech API not supported in this browser');
-            alert('Web Speech API not supported in this browser');
+            showNotification('Web Speech API not supported in this browser', 'error');
             return;
         }
         
@@ -459,7 +459,7 @@
         
         if (!audioContent) {
             console.error('WNAP: No content to read');
-            alert('No content to read');
+            showNotification('No content available to read', 'error');
             return;
         }
         
@@ -504,7 +504,16 @@
             console.error('WNAP: Speech synthesis error:', event);
             isPlaying = false;
             updatePlayPauseButtons();
-            alert('Error playing audio: ' + event.error);
+            // Show user-friendly error message
+            var errorMsg = 'Unable to play audio. ';
+            if (event.error === 'network') {
+                errorMsg += 'Please check your internet connection.';
+            } else if (event.error === 'not-allowed') {
+                errorMsg += 'Please allow audio playback.';
+            } else {
+                errorMsg += 'Please try again.';
+            }
+            showNotification(errorMsg, 'error');
         };
         
         speechUtterance.onpause = function() {
@@ -624,6 +633,50 @@
     function resetProgress() {
         $('.wnap-progress-fill').css('width', '0%');
         $('.wnap-time').text('0:00 / 0:00');
+    }
+    
+    /**
+     * Show notification message
+     */
+    function showNotification(message, type) {
+        type = type || 'info'; // info, success, error, warning
+        
+        // Remove existing notifications
+        $('.wnap-notification').remove();
+        
+        // Create notification
+        var $notification = $('<div class="wnap-notification wnap-notification-' + type + '">' +
+            '<span class="wnap-notification-message">' + message + '</span>' +
+            '<button class="wnap-notification-close" aria-label="Close">&times;</button>' +
+        '</div>');
+        
+        // Add to body
+        $('body').append($notification);
+        
+        // Show with animation
+        setTimeout(function() {
+            $notification.addClass('wnap-notification-show');
+        }, 100);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(function() {
+            hideNotification($notification);
+        }, 5000);
+        
+        // Close button handler
+        $notification.find('.wnap-notification-close').on('click', function() {
+            hideNotification($notification);
+        });
+    }
+    
+    /**
+     * Hide notification
+     */
+    function hideNotification($notification) {
+        $notification.removeClass('wnap-notification-show');
+        setTimeout(function() {
+            $notification.remove();
+        }, 300);
     }
     
     // Initialize floating button on page load

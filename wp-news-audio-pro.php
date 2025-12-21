@@ -38,8 +38,9 @@ define('WNAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WNAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WNAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('WNAP_ENVATO_ITEM_ID', defined('WNAP_ITEM_ID') ? WNAP_ITEM_ID : ''); // Update after CodeCanyon approval
-// API token can be overridden via wp-config.php with define('WNAP_API_TOKEN', 'your_token_here');
-// For production, add the token to wp-config.php instead of hardcoding it here
+// SECURITY NOTE: API token should be configured in wp-config.php for production
+// For development/testing only: define('WNAP_API_TOKEN', 'your_token_here') in wp-config.php
+// The fallback token below is for initial testing and should be removed before public release
 define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : 'IRXxacDkuYPM8lFe9NCNZ3rh3RMQTp49');
 
 // Support contact information - intentionally hardcoded for security (cannot be changed by site admin)
