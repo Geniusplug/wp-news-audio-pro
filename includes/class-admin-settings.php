@@ -113,6 +113,10 @@ class WNAP_Admin_Settings {
         $sanitized['exclude_pages'] = isset($input['exclude_pages']) ? sanitize_text_field($input['exclude_pages']) : '';
         $sanitized['exclude_urls'] = isset($input['exclude_urls']) ? sanitize_textarea_field($input['exclude_urls']) : '';
         
+        // Auto-hide and auto-reopen settings
+        $sanitized['auto_hide_delay'] = isset($input['auto_hide_delay']) ? absint($input['auto_hide_delay']) : 30;
+        $sanitized['auto_reopen_delay'] = isset($input['auto_reopen_delay']) ? absint($input['auto_reopen_delay']) : 60;
+        
         // Audio settings
         $sanitized['tts_engine'] = isset($input['tts_engine']) ? sanitize_text_field($input['tts_engine']) : 'web_speech';
         $sanitized['voice_engine'] = isset($input['voice_engine']) ? sanitize_text_field($input['voice_engine']) : 'espeak';
@@ -366,6 +370,46 @@ class WNAP_Admin_Settings {
                             /cart/<br>
                             /checkout/<br>
                             /account/
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="auto_hide_delay">
+                            <?php esc_html_e('Auto-hide Floating Button After (seconds)', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="number" 
+                               name="wnap_settings[auto_hide_delay]" 
+                               id="auto_hide_delay"
+                               value="<?php echo esc_attr(isset($settings['auto_hide_delay']) ? $settings['auto_hide_delay'] : 30); ?>" 
+                               min="5"
+                               max="300"
+                               class="small-text">
+                        <p class="description">
+                            <?php esc_html_e('Automatically close the floating button after this many seconds of inactivity (5-300 seconds). Default: 30', 'wp-news-audio-pro'); ?>
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="auto_reopen_delay">
+                            <?php esc_html_e('Auto-reopen Floating Button After (seconds)', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="number" 
+                               name="wnap_settings[auto_reopen_delay]" 
+                               id="auto_reopen_delay"
+                               value="<?php echo esc_attr(isset($settings['auto_reopen_delay']) ? $settings['auto_reopen_delay'] : 60); ?>" 
+                               min="10"
+                               max="600"
+                               class="small-text">
+                        <p class="description">
+                            <?php esc_html_e('Automatically reopen the floating button after this many seconds of being closed (10-600 seconds). Default: 60', 'wp-news-audio-pro'); ?>
                         </p>
                     </td>
                 </tr>
