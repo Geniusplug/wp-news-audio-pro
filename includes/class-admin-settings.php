@@ -474,7 +474,7 @@ class WNAP_Admin_Settings {
                             <tr>
                                 <th scope="row"><?php esc_html_e('Expires In', 'wp-news-audio-pro'); ?></th>
                                 <td>
-                                    <strong style="color: <?php echo $days_remaining > 30 ? '#46b450' : '#dc3232'; ?>">
+                                    <strong style="color: <?php echo esc_attr($days_remaining > 30 ? '#46b450' : '#dc3232'); ?>">
                                         <?php echo esc_html($days_remaining); ?> days
                                     </strong>
                                 </td>

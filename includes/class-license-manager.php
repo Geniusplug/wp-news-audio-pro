@@ -527,8 +527,8 @@ class WNAP_License_Manager {
             // Also save license type separately for backward compatibility
             update_option('wnap_license_type', 'test', false);
             
-            // Log for debugging
-            error_log('WNAP: Test license activated - ' . wp_json_encode($license_data));
+            // Log for debugging (without sensitive data)
+            error_log('WNAP: Test license activated - Type: test, Expires in: 90 days, Domain pattern: ' . substr($license_data['domain'], 0, 10) . '...');
             
         } catch (Exception $e) {
             error_log('WNAP: Error activating test license: ' . $e->getMessage());
