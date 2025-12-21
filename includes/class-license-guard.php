@@ -121,9 +121,10 @@ class WNAP_License_Guard {
             // Disable frontend popup
             add_filter('wnap_show_frontend_popup', '__return_false', 999);
             
-            // Note: We allow CSS/JS to load for better UX - users can see the UI
-            // Actual functionality is blocked at the AJAX level
-            // add_action('wp_enqueue_scripts', array($this, 'block_frontend_assets'), 999);
+            // Note: Frontend assets (CSS/JS) are allowed to load for better UX
+            // Users can see the interface and interact with it
+            // Actual functionality is blocked at the AJAX level (see block_ajax_request)
+            
             add_action('admin_enqueue_scripts', array($this, 'block_admin_assets'), 999);
             
             // Block AJAX requests
@@ -229,19 +230,6 @@ class WNAP_License_Guard {
             </div>
             <?php
         }
-    }
-    
-    /**
-     * Block frontend assets from loading
-     * 
-     * @since 1.0.0
-     */
-    public function block_frontend_assets() {
-        // Dequeue all plugin frontend assets
-        wp_dequeue_style('wnap-frontend-style');
-        wp_dequeue_script('wnap-frontend-script');
-        wp_dequeue_style('plyr-css');
-        wp_dequeue_script('plyr-js');
     }
     
     /**
