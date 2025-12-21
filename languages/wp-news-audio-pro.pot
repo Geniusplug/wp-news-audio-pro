@@ -1,0 +1,144 @@
+# Copyright (C) 2025 Geniusplug
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: WP News Audio Pro 1.0.0\n"
+"Report-Msgid-Bugs-To: support@yoursite.com\n"
+"POT-Creation-Date: 2025-01-20 00:00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: WordPress\n"
+"X-Domain: wp-news-audio-pro\n"
+
+#: wp-news-audio-pro.php
+msgid "WP News Audio Pro"
+msgstr ""
+
+#: wp-news-audio-pro.php
+msgid "Convert WordPress posts to audio with animated popup, multi-language TTS support, and license verification system."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "News Audio Pro"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "General"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Audio Settings"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "License"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "About"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Enable Popup"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Auto-play on Page Load"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Default Language"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Player Position"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Voice Engine"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Speech Speed"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Pitch"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Volume"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Audio Format"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Cache Duration (Days)"
+msgstr ""
+
+#: includes/class-frontend-popup.php
+msgid "Listen to this article"
+msgstr ""
+
+#: includes/class-frontend-popup.php
+msgid "Choose how you'd like to consume this content"
+msgstr ""
+
+#: includes/class-frontend-popup.php
+msgid "Listen to Audio"
+msgstr ""
+
+#: includes/class-frontend-popup.php
+msgid "Read Article"
+msgstr ""
+
+#: includes/class-frontend-popup.php
+msgid "Don't show again"
+msgstr ""
+
+#: includes/class-license-manager.php
+msgid "Security check failed"
+msgstr ""
+
+#: includes/class-license-manager.php
+msgid "Unauthorized access"
+msgstr ""
+
+#: includes/class-license-manager.php
+msgid "License activated successfully"
+msgstr ""
+
+#: includes/class-license-manager.php
+msgid "License deactivated successfully"
+msgstr ""
+
+#: includes/class-plugin-core.php
+msgid "News Audio"
+msgstr ""
+
+#: includes/class-plugin-core.php
+msgid "No audio file generated yet."
+msgstr ""
+
+#: includes/class-plugin-core.php
+msgid "Generate Audio"
+msgstr ""
+
+#: includes/class-plugin-core.php
+msgid "Regenerate Audio"
+msgstr ""
+
+#: includes/class-plugin-core.php
+msgid "Generating audio..."
+msgstr ""
+
+#: includes/class-plugin-core.php
+msgid "Error generating audio"
+msgstr ""

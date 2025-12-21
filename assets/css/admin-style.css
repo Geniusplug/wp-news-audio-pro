@@ -1,0 +1,280 @@
+/**
+ * Admin Styles
+ * 
+ * Styles for the WordPress admin panel
+ * 
+ * @package WP_News_Audio_Pro
+ * @since 1.0.0
+ */
+
+:root {
+    --wnap-primary: #4A90E2;
+    --wnap-secondary: #7B68EE;
+    --wnap-success: #52C41A;
+    --wnap-danger: #FF4D4F;
+    --wnap-text: #333333;
+    --wnap-bg: #FFFFFF;
+    --wnap-border: #E8E8E8;
+}
+
+/* Settings Wrapper */
+.wnap-settings-wrap {
+    max-width: 1200px;
+    margin: 20px 0;
+}
+
+.wnap-settings-wrap h1 {
+    margin-bottom: 20px;
+}
+
+/* Tab Navigation */
+.wnap-settings-wrap .nav-tab-wrapper {
+    margin-bottom: 30px;
+}
+
+.wnap-settings-wrap .nav-tab {
+    font-size: 14px;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+}
+
+.wnap-settings-wrap .nav-tab:hover {
+    background-color: #f0f0f1;
+}
+
+.wnap-settings-wrap .nav-tab-active {
+    background-color: var(--wnap-primary);
+    color: #fff;
+    border-color: var(--wnap-primary);
+}
+
+/* Tab Content */
+.wnap-tab-content {
+    background: #fff;
+    padding: 30px;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Table */
+.wnap-settings-form .form-table th {
+    font-weight: 600;
+    color: var(--wnap-text);
+}
+
+.wnap-settings-form .form-table td {
+    padding: 15px 10px;
+}
+
+/* Toggle Switch */
+.wnap-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.wnap-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.wnap-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.wnap-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.wnap-toggle input:checked + .wnap-toggle-slider {
+    background-color: var(--wnap-primary);
+}
+
+.wnap-toggle input:checked + .wnap-toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* Range Slider */
+.wnap-range-slider {
+    width: 300px;
+    margin-right: 10px;
+}
+
+.wnap-range-value {
+    display: inline-block;
+    min-width: 50px;
+    font-weight: 600;
+    color: var(--wnap-primary);
+}
+
+/* License Section */
+.wnap-license-section {
+    max-width: 800px;
+}
+
+.wnap-license-status {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wnap-license-status .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.wnap-license-active {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.wnap-license-active .dashicons {
+    color: var(--wnap-success);
+}
+
+.wnap-license-inactive {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+}
+
+.wnap-license-inactive .dashicons {
+    color: #ffc107;
+}
+
+.wnap-license-form input[type="text"] {
+    width: 100%;
+    max-width: 500px;
+}
+
+.wnap-license-loader {
+    margin-left: 10px;
+}
+
+.wnap-license-message {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.wnap-license-message.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.wnap-license-message.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* About Section */
+.wnap-about-section {
+    max-width: 800px;
+}
+
+.wnap-changelog h4 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: var(--wnap-primary);
+}
+
+.wnap-changelog ul {
+    list-style: disc;
+    padding-left: 20px;
+}
+
+.wnap-changelog li {
+    margin-bottom: 5px;
+}
+
+/* Meta Box */
+.wnap-meta-box {
+    padding: 10px;
+}
+
+.wnap-meta-box p {
+    margin: 10px 0;
+}
+
+.wnap-meta-box audio {
+    margin: 10px 0;
+}
+
+.wnap-meta-box .button {
+    margin-top: 10px;
+}
+
+/* Buttons */
+.wnap-settings-wrap .button-primary {
+    background-color: var(--wnap-primary);
+    border-color: var(--wnap-primary);
+    text-shadow: none;
+    box-shadow: none;
+    transition: all 0.3s ease;
+}
+
+.wnap-settings-wrap .button-primary:hover,
+.wnap-settings-wrap .button-primary:focus {
+    background-color: #3a7bc8;
+    border-color: #3a7bc8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+    .wnap-tab-content {
+        padding: 15px;
+    }
+    
+    .wnap-range-slider {
+        width: 100%;
+        max-width: 250px;
+    }
+    
+    .wnap-license-form input[type="text"] {
+        max-width: 100%;
+    }
+}
+
+/* Loading Animation */
+@keyframes wnap-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.wnap-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--wnap-primary);
+    animation: wnap-spin 0.6s linear infinite;
+}

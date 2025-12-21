@@ -1,0 +1,90 @@
+== Changelog ==
+
+= 1.0.0 - 2025-01-20 =
+
+**Initial Release**
+
+New Features:
+* Multi-language text-to-speech support (8+ languages)
+* Animated popup modal with smooth transitions
+* Modern HTML5 audio player powered by Plyr.js
+* Secure license verification system via Envato API
+* Comprehensive admin settings panel with tabbed interface
+* Smart audio caching system for performance
+* Responsive design for mobile, tablet, and desktop
+* Translation ready with .pot file included
+* Automatic cleanup of old audio files
+* Keyboard navigation and accessibility support
+* Dark mode support for modern browsers
+
+Supported Languages:
+* English (US)
+* English (UK)
+* Spanish
+* French
+* German
+* Arabic
+* Hindi
+* Chinese
+
+TTS Engines:
+* eSpeak (free, offline)
+* ResponsiveVoice.js (free tier)
+* Google Cloud TTS API (premium)
+
+Admin Features:
+* General settings tab (popup, auto-play, language)
+* Audio settings tab (engine, speed, pitch, volume)
+* License activation tab (purchase code verification)
+* About tab (version info, changelog, credits)
+
+Frontend Features:
+* Popup appears on page load or scroll (30%)
+* "Don't show again" option with localStorage
+* Loading overlay during audio generation
+* Player remembers playback position
+* Speed control (0.5x to 2x)
+* Volume control
+* Progress tracking
+
+Security:
+* All inputs sanitized and validated
+* Nonce verification on all AJAX requests
+* Capability checks for admin functions
+* Output escaping throughout
+* Direct access protection on all files
+* Secure license encryption
+
+Performance:
+* Audio file caching by content hash
+* Lazy loading of player scripts
+* Minified CSS and JS (production ready)
+* Optimized database queries
+* Scheduled cleanup cron job
+
+Developer Features:
+* WordPress Coding Standards compliant
+* PHPDoc comments throughout
+* Hooks and filters for extensibility
+* Singleton pattern implementation
+* OOP architecture with proper namespacing
+* Translation ready
+
+Files Included:
+* Main plugin file (wp-news-audio-pro.php)
+* Core classes (6 files)
+* CSS files (admin and frontend)
+* JavaScript files (admin and frontend)
+* Image assets (icons and banner)
+* Documentation (README.txt, README.md)
+* License file (GPL v2)
+* Uninstall script
+* Translation template (.pot)
+
+---
+
+For detailed information about future updates, visit:
+https://github.com/Geniusplug/wp-news-audio-pro
+
+For support:
+support@yoursite.com
