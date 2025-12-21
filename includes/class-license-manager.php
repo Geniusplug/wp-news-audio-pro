@@ -94,10 +94,8 @@ class WNAP_License_Manager {
             // Check license validity on every admin page load
             $is_valid = $this->is_license_valid();
             
-            // Log current status for debugging (consider disabling in production)
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('WNAP: License check on page load - ' . ($is_valid ? 'VALID' : 'INVALID'));
-            }
+            // Log current status for debugging
+            $this->debug_log('WNAP: License check on page load - ' . ($is_valid ? 'VALID' : 'INVALID'));
             
             if (!$is_valid) {
                 // Show activation notice on plugin pages
@@ -538,8 +536,8 @@ class WNAP_License_Manager {
             // Also save license type separately for backward compatibility
             update_option('wnap_license_type', 'test', false);
             
-            // Log for debugging (without sensitive data)
-            error_log('WNAP: Test license activated - Type: test, Expires in: 90 days, Domain pattern: ' . substr($license_data['domain'], 0, 10) . '...');
+            // Log for debugging (only in debug mode)
+            $this->debug_log('WNAP: Test license activated successfully - Expires in 90 days');
             
         } catch (Exception $e) {
             error_log('WNAP: Error activating test license: ' . $e->getMessage());
@@ -729,6 +727,18 @@ class WNAP_License_Manager {
     }
     
     /**
+     * Log debug message (only when WP_DEBUG enabled)
+     * 
+     * @param string $message Message to log
+     * @since 1.0.0
+     */
+    private function debug_log($message) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($message);
+        }
+    }
+    
+    /**
      * Check if license is valid
      * 
      * @return bool True if license is valid, false otherwise
@@ -739,37 +749,37 @@ class WNAP_License_Manager {
             $status = get_option('wnap_license_status', 'inactive');
             
             if ($status !== 'active') {
-                error_log('WNAP: License check - status not active: ' . $status);
+                $this->debug_log('WNAP: License check - status not active');
                 return false;
             }
             
             $license = $this->get_license_data();
             
             if (!$license || !is_array($license)) {
-                error_log('WNAP: License check - no license data found');
+                $this->debug_log('WNAP: License check - no license data found');
                 return false;
             }
             
             // Check status
             if (!isset($license['status']) || $license['status'] !== 'active') {
-                error_log('WNAP: License check - license status field not active');
+                $this->debug_log('WNAP: License check - license status field not active');
                 return false;
             }
             
             // Check if test license
             if (isset($license['type']) && $license['type'] === 'test') {
-                error_log('WNAP: Checking test license validity');
+                $this->debug_log('WNAP: Checking test license validity');
                 
                 // Verify still on localhost
                 if (!$this->is_localhost()) {
-                    error_log('WNAP: Test license invalid - not on localhost');
+                    $this->debug_log('WNAP: Test license invalid - not on localhost');
                     $this->deactivate_license();
                     return false;
                 }
                 
                 // Check expiration
                 if (isset($license['expires_at']) && $license['expires_at'] < time()) {
-                    error_log('WNAP: Test license expired');
+                    $this->debug_log('WNAP: Test license expired');
                     $this->deactivate_license();
                     return false;
                 }
@@ -779,13 +789,13 @@ class WNAP_License_Manager {
                 $days_active = (time() - $activated_at) / DAY_IN_SECONDS;
                 
                 if ($days_active > $this->test_expiration_days) {
-                    error_log('WNAP: Test license expired (checked via activated_at)');
+                    $this->debug_log('WNAP: Test license expired (checked via activated_at)');
                     $this->deactivate_license();
                     return false;
                 }
                 
                 // Test license is valid - return early, skip domain/fingerprint checks
-                error_log('WNAP: Test license is VALID');
+                $this->debug_log('WNAP: Test license is VALID');
                 return true;
             }
             
@@ -794,7 +804,7 @@ class WNAP_License_Manager {
             
             if (isset($license['domain']) && !empty($license['domain'])) {
                 if ($license['domain'] !== $current_domain) {
-                    error_log('WNAP: License domain mismatch - Expected: ' . $license['domain'] . ', Got: ' . $current_domain);
+                    $this->debug_log('WNAP: License domain mismatch');
                     return false;
                 }
             }
@@ -804,7 +814,7 @@ class WNAP_License_Manager {
                 $current_fingerprint = $this->generate_domain_fingerprint();
                 if ($license['fingerprint'] !== $current_fingerprint) {
                     // Domain fingerprint mismatch - license copied to different domain
-                    error_log('WNAP: Domain fingerprint mismatch - license may have been copied');
+                    $this->debug_log('WNAP: Domain fingerprint mismatch');
                     $this->deactivate_license();
                     return false;
                 }
@@ -820,13 +830,13 @@ class WNAP_License_Manager {
                 
                 if (!hash_equals($license['signature'], $expected_signature)) {
                     // Signature mismatch - license data has been tampered with
-                    error_log('WNAP: License signature mismatch - data may have been tampered');
+                    $this->debug_log('WNAP: License signature mismatch');
                     $this->deactivate_license();
                     return false;
                 }
             }
             
-            error_log('WNAP: Regular license is VALID');
+            $this->debug_log('WNAP: Regular license is VALID');
             return true;
             
         } catch (Exception $e) {
