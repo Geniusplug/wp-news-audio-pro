@@ -45,10 +45,9 @@
             hidePopup();
             // Open the floating button and start playing instantly
             if ($('#wnapFloatingBtn').length) {
-                openFloatingButton();
-                setTimeout(function() {
+                openFloatingButton(function() {
                     playAudio();
-                }, 100);
+                });
             }
         });
         
@@ -364,11 +363,9 @@
         
         // Closed state - Click to open and start playing instantly
         $('.wnap-fab-closed').on('click', function() {
-            openFloatingButton();
-            // Start playing audio instantly for one-click experience
-            setTimeout(function() {
+            openFloatingButton(function() {
                 playAudio();
-            }, 100); // Small delay to ensure button is opened
+            });
         });
         
         // Close button
@@ -412,12 +409,17 @@
     /**
      * Open floating button
      */
-    function openFloatingButton() {
+    function openFloatingButton(callback) {
         var $fabOpen = $('.wnap-fab-open');
         $('.wnap-fab-closed').fadeOut(200, function() {
             // Remove hidden class and fade in
             // Note: fadeIn() will set display to 'block' and animate opacity
-            $fabOpen.removeClass('wnap-fab-hidden').hide().fadeIn(300);
+            $fabOpen.removeClass('wnap-fab-hidden').hide().fadeIn(300, function() {
+                // Call callback after animation completes
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            });
         });
     }
     
