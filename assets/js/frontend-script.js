@@ -168,12 +168,12 @@
                     initPlayer(audioUrl);
                     showPlayer();
                 } else {
-                    alert(response.data.message || wnapFrontend.strings.error);
+                    showNotification(response.data.message || wnapFrontend.strings.error, 'error');
                 }
             },
             error: function() {
                 hideLoadingOverlay();
-                alert(wnapFrontend.strings.error || 'An error occurred');
+                showNotification(wnapFrontend.strings.error || 'An error occurred', 'error');
             }
         });
     }
@@ -331,15 +331,31 @@
      * Initialize floating button
      */
     function initFloatingButton() {
+        // Check if Web Speech API is supported
+        if (!('speechSynthesis' in window)) {
+            console.error('WNAP: Web Speech API not supported in this browser');
+            // Hide button if not supported
+            $('#wnapFloatingBtn').hide();
+            return;
+        }
+        
         var $btn = $('#wnapFloatingBtn');
+        
+        // Check if button exists
+        if ($btn.length === 0) {
+            console.error('WNAP: Floating button not found in DOM');
+            return;
+        }
         
         // Check if button should be hidden forever
         if (localStorage.getItem('wnap_fab_hidden') === 'true') {
+            console.log('WNAP: Floating button hidden by user preference');
             return;
         }
         
         // Show button
         $btn.fadeIn(300);
+        console.log('WNAP: Floating button initialized');
         
         // Closed state - Click to open
         $('.wnap-fab-closed').on('click', function() {
@@ -432,7 +448,8 @@
      */
     function playAudio() {
         if (!speechSynthesis) {
-            alert('Web Speech API not supported in this browser');
+            console.error('WNAP: Web Speech API not supported in this browser');
+            showNotification('Web Speech API not supported in this browser', 'error');
             return;
         }
         
@@ -441,7 +458,8 @@
         }
         
         if (!audioContent) {
-            alert('No content to read');
+            console.error('WNAP: No content to read');
+            showNotification('No content available to read', 'error');
             return;
         }
         
@@ -450,6 +468,7 @@
             speechSynthesis.resume();
             isPlaying = true;
             updatePlayPauseButtons();
+            console.log('WNAP: Speech resumed');
             return;
         }
         
@@ -465,27 +484,42 @@
         speechUtterance.pitch = settings.pitch || 1.0;
         speechUtterance.volume = (settings.volume || 80) / 100;
         
+        console.log('WNAP: Starting speech synthesis with language: ' + language + ', speed: ' + currentSpeed);
+        
         // Event handlers
         speechUtterance.onstart = function() {
             isPlaying = true;
             updatePlayPauseButtons();
+            console.log('WNAP: Speech started');
         };
         
         speechUtterance.onend = function() {
             isPlaying = false;
             updatePlayPauseButtons();
             resetProgress();
+            console.log('WNAP: Speech ended');
         };
         
         speechUtterance.onerror = function(event) {
-            console.error('Speech synthesis error:', event);
+            console.error('WNAP: Speech synthesis error:', event);
             isPlaying = false;
             updatePlayPauseButtons();
+            // Show user-friendly error message
+            var errorMsg = 'Unable to play audio. ';
+            if (event.error === 'network') {
+                errorMsg += 'Please check your internet connection.';
+            } else if (event.error === 'not-allowed') {
+                errorMsg += 'Please allow audio playback.';
+            } else {
+                errorMsg += 'Please try again.';
+            }
+            showNotification(errorMsg, 'error');
         };
         
         speechUtterance.onpause = function() {
             isPlaying = false;
             updatePlayPauseButtons();
+            console.log('WNAP: Speech paused');
         };
         
         // Start speaking
@@ -599,6 +633,50 @@
     function resetProgress() {
         $('.wnap-progress-fill').css('width', '0%');
         $('.wnap-time').text('0:00 / 0:00');
+    }
+    
+    /**
+     * Show notification message
+     */
+    function showNotification(message, type) {
+        type = type || 'info'; // info, success, error, warning
+        
+        // Remove existing notifications
+        $('.wnap-notification').remove();
+        
+        // Create notification
+        var $notification = $('<div class="wnap-notification wnap-notification-' + type + '">' +
+            '<span class="wnap-notification-message">' + message + '</span>' +
+            '<button class="wnap-notification-close" aria-label="Close">&times;</button>' +
+        '</div>');
+        
+        // Add to body
+        $('body').append($notification);
+        
+        // Show with animation
+        setTimeout(function() {
+            $notification.addClass('wnap-notification-show');
+        }, 100);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(function() {
+            hideNotification($notification);
+        }, 5000);
+        
+        // Close button handler
+        $notification.find('.wnap-notification-close').on('click', function() {
+            hideNotification($notification);
+        });
+    }
+    
+    /**
+     * Hide notification
+     */
+    function hideNotification($notification) {
+        $notification.removeClass('wnap-notification-show');
+        setTimeout(function() {
+            $notification.remove();
+        }, 300);
     }
     
     // Initialize floating button on page load

@@ -5,7 +5,15 @@
  * Handles the animated popup modal on single post pages
  * 
  * @package WP_News_Audio_Pro
+ * @author Genius Plug Technology
+ * @copyright 2025 Genius Plug Technology
+ * @license GPL-2.0-or-later
  * @since 1.0.0
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 
 defined('ABSPATH') or die('Direct access not allowed');
@@ -47,16 +55,21 @@ class WNAP_Frontend_Popup {
     public function should_show_button() {
         $settings = get_option('wnap_settings', array());
         
+        // DEFAULT VALUES if not set (show by default on posts, pages, and home)
+        $show_on_posts = isset($settings['show_on_posts']) ? $settings['show_on_posts'] : true;
+        $show_on_pages = isset($settings['show_on_pages']) ? $settings['show_on_pages'] : true;
+        $show_on_home = isset($settings['show_on_home']) ? $settings['show_on_home'] : true;
+        
         // Check if current page type is enabled
-        if (is_singular('post') && empty($settings['show_on_posts'])) {
+        if (is_singular('post') && !$show_on_posts) {
             return false;
         }
         
-        if (is_page() && empty($settings['show_on_pages'])) {
+        if (is_page() && !$show_on_pages) {
             return false;
         }
         
-        if (is_front_page() && empty($settings['show_on_home'])) {
+        if (is_front_page() && !$show_on_home) {
             return false;
         }
         
@@ -82,7 +95,7 @@ class WNAP_Frontend_Popup {
             }
         }
         
-        return true;
+        return true; // Show by default
     }
     
     /**
