@@ -213,17 +213,35 @@ brew install espeak
 
 ### Testing Mode (Development)
 
-For development and testing, you can enable test mode in `wp-config.php`:
+For development and testing on localhost, use the test license code:
 
 ```php
-// Enable test mode
-define('WNAP_TEST_MODE', true);
-
-// Optional: Custom test license code
-define('WNAP_TEST_LICENSE', 'WNAP-DEV-TEST-2025');
+// In WordPress admin, go to News Audio Pro → License
+// Enter this code: WNAP-DEV-TEST-2025
+// Works ONLY on localhost (valid for 90 days)
 ```
 
-In test mode, you can activate the plugin with the test license code without Envato API validation.
+For production sites, you'll need a valid CodeCanyon purchase code.
+
+### API Token Configuration (Optional)
+
+For additional security, you can move the API token to `wp-config.php`:
+
+```php
+// Add to wp-config.php (more secure than hardcoding in plugin)
+define('WNAP_API_TOKEN', 'your_envato_api_token_here');
+
+// Get your token from: https://build.envato.com/create-token/
+// Required permissions: View and search Envato sites
+```
+
+### Default Settings
+
+After activation, the plugin automatically sets these defaults:
+- **Button Display:** Enabled on posts, pages, and home page
+- **TTS Engine:** Web Speech API (free, unlimited, no setup required)
+- **Popup:** Disabled by default (floating button enabled)
+- **Auto-play:** Disabled
 
 ### Basic Usage
 
@@ -292,9 +310,40 @@ $audio_url = $tts_engine->generate_audio(
 
 For support, please contact:
 
-- **Email:** support@yoursite.com
-- **Documentation:** [https://yoursite.com/docs](https://yoursite.com/docs)
-- **GitHub Issues:** [https://github.com/Geniusplug/wp-news-audio-pro/issues](https://github.com/Geniusplug/wp-news-audio-pro/issues)
+- **Email:** info.geniusplugtechnology@gmail.com
+- **WhatsApp:** +880 1761 487193
+- **Support Portal:** https://geniusplug.com/support/
+
+## 📦 CodeCanyon Submission Checklist
+
+Before submitting to CodeCanyon, ensure:
+
+### Functionality
+- [x] Button appears on all posts by default
+- [x] Web Speech API works immediately (no setup required)
+- [x] Test code works on localhost
+- [x] Real license verification works on live sites
+- [x] Proper default settings on activation
+
+### Code Quality
+- [x] All strings wrapped in `__()` for translation
+- [x] All inputs sanitized (`sanitize_text_field()`, `sanitize_email()`, etc.)
+- [x] All outputs escaped (`esc_html()`, `esc_attr()`, `esc_url()`)
+- [x] All database queries use `$wpdb->prepare()`
+- [x] Proper nonce verification on all AJAX actions
+- [x] Capability checks on all admin actions
+
+### Security
+- [x] API token can be configured via wp-config.php
+- [x] No hardcoded secrets in code
+- [x] GPL license headers in all PHP files
+- [x] Proper error handling (no fatal errors)
+
+### Documentation
+- [x] Complete README with installation instructions
+- [x] Clear testing instructions for localhost
+- [x] API token configuration guide
+- [x] Support contact information
 
 ## 📄 License
 

@@ -47,16 +47,21 @@ class WNAP_Frontend_Popup {
     public function should_show_button() {
         $settings = get_option('wnap_settings', array());
         
+        // DEFAULT VALUES if not set (show by default on posts, pages, and home)
+        $show_on_posts = isset($settings['show_on_posts']) ? $settings['show_on_posts'] : true;
+        $show_on_pages = isset($settings['show_on_pages']) ? $settings['show_on_pages'] : true;
+        $show_on_home = isset($settings['show_on_home']) ? $settings['show_on_home'] : true;
+        
         // Check if current page type is enabled
-        if (is_singular('post') && empty($settings['show_on_posts'])) {
+        if (is_singular('post') && !$show_on_posts) {
             return false;
         }
         
-        if (is_page() && empty($settings['show_on_pages'])) {
+        if (is_page() && !$show_on_pages) {
             return false;
         }
         
-        if (is_front_page() && empty($settings['show_on_home'])) {
+        if (is_front_page() && !$show_on_home) {
             return false;
         }
         
@@ -82,7 +87,7 @@ class WNAP_Frontend_Popup {
             }
         }
         
-        return true;
+        return true; // Show by default
     }
     
     /**

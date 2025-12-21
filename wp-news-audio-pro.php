@@ -38,7 +38,8 @@ define('WNAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WNAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WNAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('WNAP_ENVATO_ITEM_ID', defined('WNAP_ITEM_ID') ? WNAP_ITEM_ID : ''); // Update after CodeCanyon approval
-// Note: API token is intentionally hardcoded as default but can be overridden via wp-config.php with WNAP_API_TOKEN
+// API token can be overridden via wp-config.php with define('WNAP_API_TOKEN', 'your_token_here');
+// For production, add the token to wp-config.php instead of hardcoding it here
 define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : 'IRXxacDkuYPM8lFe9NCNZ3rh3RMQTp49');
 
 // Support contact information - intentionally hardcoded for security (cannot be changed by site admin)
@@ -204,20 +205,20 @@ class WP_News_Audio_Pro {
         
         // Set default options
         $default_settings = array(
-            'enable_popup' => true,
+            'enable_popup' => false, // Popup disabled by default, button enabled
             'auto_play' => false,
             'default_language' => 'en-US',
             'player_position' => 'popup',
-            'tts_engine' => 'web_speech',
+            'tts_engine' => 'web_speech', // FREE, UNLIMITED by default
             'voice_engine' => 'espeak',
             'speech_speed' => 1.0,
             'pitch' => 1.0,
             'volume' => 80,
             'audio_format' => 'mp3',
             'cache_duration' => 30,
-            'show_on_posts' => true,
-            'show_on_pages' => true,
-            'show_on_home' => false,
+            'show_on_posts' => true, // Show button on posts by default
+            'show_on_pages' => true, // Show button on pages by default
+            'show_on_home' => true,  // Show button on home by default
             'exclude_pages' => '',
             'exclude_urls' => '',
         );
@@ -401,13 +402,19 @@ class WP_News_Audio_Pro {
         
         // Check if we should load on this page
         $settings = get_option('wnap_settings', array());
+        
+        // Use default values if settings not set
+        $show_on_posts = isset($settings['show_on_posts']) ? $settings['show_on_posts'] : true;
+        $show_on_pages = isset($settings['show_on_pages']) ? $settings['show_on_pages'] : true;
+        $show_on_home = isset($settings['show_on_home']) ? $settings['show_on_home'] : true;
+        
         $should_load = false;
         
-        if (is_singular('post') && !empty($settings['show_on_posts'])) {
+        if (is_singular('post') && $show_on_posts) {
             $should_load = true;
-        } elseif (is_page() && !empty($settings['show_on_pages'])) {
+        } elseif (is_page() && $show_on_pages) {
             $should_load = true;
-        } elseif (is_front_page() && !empty($settings['show_on_home'])) {
+        } elseif (is_front_page() && $show_on_home) {
             $should_load = true;
         } elseif (is_single()) {
             // Default to showing on single posts if settings not configured

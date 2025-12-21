@@ -331,15 +331,31 @@
      * Initialize floating button
      */
     function initFloatingButton() {
+        // Check if Web Speech API is supported
+        if (!('speechSynthesis' in window)) {
+            console.error('WNAP: Web Speech API not supported in this browser');
+            // Hide button if not supported
+            $('#wnapFloatingBtn').hide();
+            return;
+        }
+        
         var $btn = $('#wnapFloatingBtn');
+        
+        // Check if button exists
+        if ($btn.length === 0) {
+            console.error('WNAP: Floating button not found in DOM');
+            return;
+        }
         
         // Check if button should be hidden forever
         if (localStorage.getItem('wnap_fab_hidden') === 'true') {
+            console.log('WNAP: Floating button hidden by user preference');
             return;
         }
         
         // Show button
         $btn.fadeIn(300);
+        console.log('WNAP: Floating button initialized');
         
         // Closed state - Click to open
         $('.wnap-fab-closed').on('click', function() {
@@ -432,6 +448,7 @@
      */
     function playAudio() {
         if (!speechSynthesis) {
+            console.error('WNAP: Web Speech API not supported in this browser');
             alert('Web Speech API not supported in this browser');
             return;
         }
@@ -441,6 +458,7 @@
         }
         
         if (!audioContent) {
+            console.error('WNAP: No content to read');
             alert('No content to read');
             return;
         }
@@ -450,6 +468,7 @@
             speechSynthesis.resume();
             isPlaying = true;
             updatePlayPauseButtons();
+            console.log('WNAP: Speech resumed');
             return;
         }
         
@@ -465,27 +484,33 @@
         speechUtterance.pitch = settings.pitch || 1.0;
         speechUtterance.volume = (settings.volume || 80) / 100;
         
+        console.log('WNAP: Starting speech synthesis with language: ' + language + ', speed: ' + currentSpeed);
+        
         // Event handlers
         speechUtterance.onstart = function() {
             isPlaying = true;
             updatePlayPauseButtons();
+            console.log('WNAP: Speech started');
         };
         
         speechUtterance.onend = function() {
             isPlaying = false;
             updatePlayPauseButtons();
             resetProgress();
+            console.log('WNAP: Speech ended');
         };
         
         speechUtterance.onerror = function(event) {
-            console.error('Speech synthesis error:', event);
+            console.error('WNAP: Speech synthesis error:', event);
             isPlaying = false;
             updatePlayPauseButtons();
+            alert('Error playing audio: ' + event.error);
         };
         
         speechUtterance.onpause = function() {
             isPlaying = false;
             updatePlayPauseButtons();
+            console.log('WNAP: Speech paused');
         };
         
         // Start speaking
