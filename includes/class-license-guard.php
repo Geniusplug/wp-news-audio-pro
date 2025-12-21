@@ -40,9 +40,28 @@ class WNAP_License_Guard {
      * @since 1.0.0
      */
     public function __construct($license_manager) {
-        $this->license_manager = $license_manager;
-        $this->is_licensed = $this->check_license();
-        $this->init_hooks();
+        try {
+            $this->license_manager = $license_manager;
+            // Safe initialization
+            add_action('plugins_loaded', array($this, 'init'), 0);
+        } catch (Exception $e) {
+            error_log('WNAP Guard Constructor Error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Initialize guard
+     * 
+     * @since 1.0.0
+     */
+    public function init() {
+        try {
+            $this->is_licensed = $this->check_license();
+            $this->init_hooks();
+        } catch (Exception $e) {
+            error_log('WNAP Guard Error: ' . $e->getMessage());
+            // Continue gracefully - don't break site
+        }
     }
     
     /**
@@ -52,17 +71,22 @@ class WNAP_License_Guard {
      * @since 1.0.0
      */
     private function check_license() {
-        // Check for test mode
-        if (defined('WNAP_TEST_MODE') && WNAP_TEST_MODE === true) {
-            $test_code = defined('WNAP_TEST_LICENSE') ? WNAP_TEST_LICENSE : 'WNAP-DEV-TEST-2025';
-            $stored_license = $this->license_manager->get_license_data();
-            
-            if ($stored_license && $stored_license['code'] === $test_code) {
-                return true;
+        try {
+            // Check for test mode
+            if (defined('WNAP_TEST_MODE') && WNAP_TEST_MODE === true) {
+                $test_code = defined('WNAP_TEST_LICENSE') ? WNAP_TEST_LICENSE : 'WNAP-DEV-TEST-2025';
+                $stored_license = $this->license_manager->get_license_data();
+                
+                if ($stored_license && isset($stored_license['code']) && $stored_license['code'] === $test_code) {
+                    return true;
+                }
             }
+            
+            return $this->license_manager->is_license_valid();
+        } catch (Exception $e) {
+            error_log('WNAP: License check error: ' . $e->getMessage());
+            return false;
         }
-        
-        return $this->license_manager->is_license_valid();
     }
     
     /**
@@ -71,39 +95,43 @@ class WNAP_License_Guard {
      * @since 1.0.0
      */
     private function init_hooks() {
-        if ($this->is_licensed) {
-            // License is valid, allow normal operation
-            return;
+        try {
+            if ($this->is_licensed) {
+                // License is valid, allow normal operation
+                return;
+            }
+            
+            // Block admin menus (except license page)
+            add_action('admin_menu', array($this, 'restrict_admin_menu'), 999);
+            
+            // Redirect admin pages to license activation
+            add_action('admin_init', array($this, 'redirect_to_license_page'));
+            
+            // Show admin notice
+            add_action('admin_notices', array($this, 'show_license_required_notice'));
+            
+            // Disable frontend popup
+            add_filter('wnap_show_frontend_popup', '__return_false', 999);
+            
+            // Prevent asset loading
+            add_action('wp_enqueue_scripts', array($this, 'block_frontend_assets'), 999);
+            add_action('admin_enqueue_scripts', array($this, 'block_admin_assets'), 999);
+            
+            // Block AJAX requests
+            add_action('wp_ajax_wnap_generate_audio', array($this, 'block_ajax_request'), 1);
+            add_action('wp_ajax_nopriv_wnap_generate_audio', array($this, 'block_ajax_request'), 1);
+            
+            // Block REST API endpoints
+            add_filter('rest_pre_dispatch', array($this, 'block_rest_api'), 10, 3);
+            
+            // Remove shortcodes
+            add_action('init', array($this, 'remove_shortcodes'), 999);
+            
+            // Disable frontend functionality
+            add_action('wp', array($this, 'disable_frontend_features'), 1);
+        } catch (Exception $e) {
+            error_log('WNAP: Hook initialization error: ' . $e->getMessage());
         }
-        
-        // Block admin menus (except license page)
-        add_action('admin_menu', array($this, 'restrict_admin_menu'), 999);
-        
-        // Redirect admin pages to license activation
-        add_action('admin_init', array($this, 'redirect_to_license_page'));
-        
-        // Show admin notice
-        add_action('admin_notices', array($this, 'show_license_required_notice'));
-        
-        // Disable frontend popup
-        add_filter('wnap_show_frontend_popup', '__return_false', 999);
-        
-        // Prevent asset loading
-        add_action('wp_enqueue_scripts', array($this, 'block_frontend_assets'), 999);
-        add_action('admin_enqueue_scripts', array($this, 'block_admin_assets'), 999);
-        
-        // Block AJAX requests
-        add_action('wp_ajax_wnap_generate_audio', array($this, 'block_ajax_request'), 1);
-        add_action('wp_ajax_nopriv_wnap_generate_audio', array($this, 'block_ajax_request'), 1);
-        
-        // Block REST API endpoints
-        add_filter('rest_pre_dispatch', array($this, 'block_rest_api'), 10, 3);
-        
-        // Remove shortcodes
-        add_action('init', array($this, 'remove_shortcodes'), 999);
-        
-        // Disable frontend functionality
-        add_action('wp', array($this, 'disable_frontend_features'), 1);
     }
     
     /**

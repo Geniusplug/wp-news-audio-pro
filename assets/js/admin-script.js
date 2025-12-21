@@ -62,11 +62,21 @@
                             location.reload();
                         }, 1500);
                     } else {
-                        showMessage('error', response.data.message);
+                        // Sanitize error message to prevent XSS
+                        var errorMessage = $('<div>').text(response.data.message || 'An error occurred. Please try again.').html();
+                        var messageHtml = '<span class="wnap-error-icon">⚠️</span> ' + errorMessage;
+                        
+                        // Show buy button if needed (URL is sanitized by server)
+                        if (response.data.action === 'buy' && response.data.buy_url) {
+                            var buyUrl = $('<div>').text(response.data.buy_url).html();
+                            messageHtml += '<br><br><a href="' + buyUrl + '" target="_blank" rel="noopener noreferrer" class="button button-primary" style="margin-top: 10px;">Buy License</a>';
+                        }
+                        
+                        showMessage('error', messageHtml);
                     }
                 },
                 error: function() {
-                    showMessage('error', 'An error occurred. Please try again.');
+                    showMessage('error', '⚠️ Connection error. Please check your internet connection and try again.');
                 },
                 complete: function() {
                     $button.prop('disabled', false);
@@ -116,7 +126,7 @@
             $message
                 .removeClass('success error')
                 .addClass(type)
-                .text(message)
+                .html(message) // Changed from .text() to .html() to support HTML content
                 .fadeIn();
         }
         
