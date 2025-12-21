@@ -441,28 +441,96 @@ class WNAP_Admin_Settings {
         <div class="wnap-license-section">
             <h2><?php esc_html_e('License Activation', 'wp-news-audio-pro'); ?></h2>
             
-            <?php if ($is_valid) : ?>
-                <div class="wnap-license-status wnap-license-active">
-                    <span class="dashicons dashicons-yes-alt"></span>
-                    <strong><?php esc_html_e('License Active', 'wp-news-audio-pro'); ?></strong>
-                </div>
+            <?php if ($is_valid && $license_data) : ?>
+                <?php 
+                // Check if it's a test license
+                $is_test_license = isset($license_data['type']) && $license_data['type'] === 'test';
+                ?>
                 
-                <table class="form-table">
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Purchase Code', 'wp-news-audio-pro'); ?></th>
-                        <td>
-                            <code><?php echo esc_html(substr($license_data['code'], 0, 8) . '****'); ?></code>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Domain', 'wp-news-audio-pro'); ?></th>
-                        <td><?php echo esc_html($license_data['domain']); ?></td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Activated', 'wp-news-audio-pro'); ?></th>
-                        <td><?php echo esc_html(date_i18n(get_option('date_format'), $license_data['activated_at'])); ?></td>
-                    </tr>
-                </table>
+                <?php if ($is_test_license) : ?>
+                    <?php
+                    // Calculate days remaining for test license
+                    $days_remaining = 0;
+                    if (isset($license_data['expires_at'])) {
+                        $days_remaining = ceil(($license_data['expires_at'] - time()) / DAY_IN_SECONDS);
+                    } elseif (isset($license_data['activated_at'])) {
+                        $days_remaining = 90 - ceil((time() - $license_data['activated_at']) / DAY_IN_SECONDS);
+                    }
+                    ?>
+                    <div class="notice notice-success" style="padding: 15px; border-left-color: #46b450;">
+                        <h3 style="margin-top: 0;">
+                            <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
+                            <?php esc_html_e('✅ Test License Active', 'wp-news-audio-pro'); ?>
+                        </h3>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><?php esc_html_e('License Type', 'wp-news-audio-pro'); ?></th>
+                                <td><strong><?php esc_html_e('Test License - 90 Days', 'wp-news-audio-pro'); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Domain', 'wp-news-audio-pro'); ?></th>
+                                <td><code><?php echo esc_html($license_data['domain'] ?? $current_domain); ?></code></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Expires In', 'wp-news-audio-pro'); ?></th>
+                                <td>
+                                    <strong style="color: <?php echo $days_remaining > 30 ? '#46b450' : '#dc3232'; ?>">
+                                        <?php echo esc_html($days_remaining); ?> days
+                                    </strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Activated', 'wp-news-audio-pro'); ?></th>
+                                <td>
+                                    <?php 
+                                    if (isset($license_data['activated_at'])) {
+                                        echo esc_html(date_i18n('Y-m-d H:i:s', $license_data['activated_at']));
+                                    } else {
+                                        esc_html_e('Unknown', 'wp-news-audio-pro');
+                                    }
+                                    ?>
+                                </td>
+                            </tr>
+                        </table>
+                        <p class="description">
+                            <?php esc_html_e('This is a test license valid only on localhost/development environments.', 'wp-news-audio-pro'); ?>
+                        </p>
+                    </div>
+                <?php else : ?>
+                    <div class="wnap-license-status wnap-license-active">
+                        <span class="dashicons dashicons-yes-alt"></span>
+                        <strong><?php esc_html_e('✅ License Active', 'wp-news-audio-pro'); ?></strong>
+                    </div>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Purchase Code', 'wp-news-audio-pro'); ?></th>
+                            <td>
+                                <code><?php echo esc_html(substr($license_data['code'], 0, 8) . '****'); ?></code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Domain', 'wp-news-audio-pro'); ?></th>
+                            <td><?php echo esc_html($license_data['domain']); ?></td>
+                        </tr>
+                        <?php if (isset($license_data['buyer'])) : ?>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Buyer', 'wp-news-audio-pro'); ?></th>
+                            <td><?php echo esc_html($license_data['buyer']); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Activated', 'wp-news-audio-pro'); ?></th>
+                            <td><?php echo esc_html(date_i18n(get_option('date_format'), $license_data['activated_at'])); ?></td>
+                        </tr>
+                        <?php if (isset($license_data['license'])) : ?>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('License Type', 'wp-news-audio-pro'); ?></th>
+                            <td><?php echo esc_html($license_data['license']); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                    </table>
+                <?php endif; ?>
                 
                 <p>
                     <button type="button" class="button button-secondary wnap-deactivate-license">
@@ -493,10 +561,14 @@ class WNAP_Admin_Settings {
                                     <?php 
                                     printf(
                                         /* translators: %s: Link to Envato help */
-                                        esc_html__('Enter your purchase code from CodeCanyon. %s', 'wp-news-audio-pro'),
-                                        '<a href="https://help.market.envato.com/hc/en-us/articles/202822600-Where-Is-My-Purchase-Code-" target="_blank">' . esc_html__('Where to find it?', 'wp-news-audio-pro') . '</a>'
+                                        esc_html__('Enter your purchase code from CodeCanyon or use %s for testing on localhost.', 'wp-news-audio-pro'),
+                                        '<code>WNAP-DEV-TEST-2025</code>'
                                     );
                                     ?>
+                                    <br>
+                                    <a href="https://help.market.envato.com/hc/en-us/articles/202822600-Where-Is-My-Purchase-Code-" target="_blank">
+                                        <?php esc_html_e('Where to find your purchase code?', 'wp-news-audio-pro'); ?>
+                                    </a>
                                 </p>
                             </td>
                         </tr>
