@@ -36,6 +36,49 @@ class WNAP_TTS_Engine {
     );
     
     /**
+     * Available TTS engines
+     * 
+     * @var array
+     */
+    private $engines = array(
+        'web_speech' => array(
+            'name' => 'Web Speech API (Browser)',
+            'cost' => 'FREE',
+            'unlimited' => true,
+            'api_required' => false,
+            'description' => 'Browser built-in TTS (unlimited, no API needed)'
+        ),
+        'responsive_voice' => array(
+            'name' => 'ResponsiveVoice.js',
+            'cost' => 'FREE',
+            'unlimited' => false,
+            'api_required' => false,
+            'description' => 'Free tier: 5,000 requests/day'
+        ),
+        'espeak' => array(
+            'name' => 'eSpeak (Server-side)',
+            'cost' => 'FREE',
+            'unlimited' => true,
+            'api_required' => false,
+            'description' => 'Offline TTS (requires eSpeak installed on server)'
+        ),
+        'google_tts' => array(
+            'name' => 'Google Cloud Text-to-Speech',
+            'cost' => 'PAID',
+            'unlimited' => false,
+            'api_required' => true,
+            'description' => '$4 per 1 million characters'
+        ),
+        'amazon_polly' => array(
+            'name' => 'Amazon Polly',
+            'cost' => 'PAID',
+            'unlimited' => false,
+            'api_required' => true,
+            'description' => '$4 per 1 million characters, neural voices available'
+        )
+    );
+    
+    /**
      * Constructor
      * 
      * @since 1.0.0
@@ -49,16 +92,14 @@ class WNAP_TTS_Engine {
      * 
      * @param int $post_id Post ID
      * @param string $content Post content
-     * @param string $language Language code
-     * @param array $settings Plugin settings
-     * @return string|false Audio URL on success, false on failure
+     * @param array $settings Plugin settings (optional, uses saved settings if not provided)
+     * @return array|false Audio data on success, false on failure
      * @since 1.0.0
      */
-    public function generate_audio($post_id, $content, $language, $settings) {
-        // Check if audio already exists
-        $existing_url = $this->get_audio_url($post_id);
-        if ($existing_url) {
-            return $existing_url;
+    public function generate_audio($post_id, $content, $settings = null) {
+        // Get settings if not provided
+        if (null === $settings) {
+            $settings = get_option('wnap_settings', array());
         }
         
         // Process content
@@ -68,63 +109,29 @@ class WNAP_TTS_Engine {
             return false;
         }
         
-        // Get audio directory
-        $upload_dir = wp_upload_dir();
-        $base_dir = $upload_dir['basedir'] . '/news-audio-pro/';
-        $base_url = $upload_dir['baseurl'] . '/news-audio-pro/';
-        
-        // Create year/month directory
-        $year = date('Y');
-        $month = date('m');
-        $audio_dir = $base_dir . $year . '/' . $month . '/';
-        $audio_url_base = $base_url . $year . '/' . $month . '/';
-        
-        if (!file_exists($audio_dir)) {
-            wp_mkdir_p($audio_dir);
-        }
-        
-        // Generate unique filename
-        $content_hash = md5($text . $language);
-        $filename = 'post-' . $post_id . '-' . $content_hash . '.mp3';
-        $output_file = $audio_dir . $filename;
-        $output_url = $audio_url_base . $filename;
-        
-        // Check if file already exists
-        if (file_exists($output_file)) {
-            update_post_meta($post_id, '_wnap_audio_url', $output_url);
-            update_post_meta($post_id, '_wnap_audio_file', $output_file);
-            return $output_url;
-        }
-        
-        // Get voice engine
-        $voice_engine = isset($settings['voice_engine']) ? $settings['voice_engine'] : 'espeak';
+        // Get TTS engine
+        $engine = isset($settings['tts_engine']) ? $settings['tts_engine'] : 'web_speech';
         
         // Generate audio based on engine
-        $result = false;
-        switch ($voice_engine) {
-            case 'espeak':
-                $result = $this->process_with_espeak($text, $language, $output_file, $settings);
-                break;
-            case 'responsivevoice':
-                $result = $this->process_with_responsive_voice($text, $language, $output_file, $settings);
-                break;
-            case 'google':
-                $result = $this->process_with_google_tts($text, $language, $output_file, $settings);
-                break;
-            default:
-                $result = $this->process_with_espeak($text, $language, $output_file, $settings);
-        }
-        
-        if ($result) {
-            // Store audio metadata
-            update_post_meta($post_id, '_wnap_audio_url', $output_url);
-            update_post_meta($post_id, '_wnap_audio_file', $output_file);
-            update_post_meta($post_id, '_wnap_audio_generated', time());
+        switch ($engine) {
+            case 'web_speech':
+                return $this->use_web_speech_api($post_id, $text, $settings);
             
-            return $output_url;
+            case 'responsive_voice':
+                return $this->use_responsive_voice($post_id, $text, $settings);
+            
+            case 'espeak':
+                return $this->use_espeak($post_id, $text, $settings);
+            
+            case 'google_tts':
+                return $this->use_google_tts($post_id, $text, $settings);
+            
+            case 'amazon_polly':
+                return $this->use_amazon_polly($post_id, $text, $settings);
+            
+            default:
+                return $this->use_web_speech_api($post_id, $text, $settings);
         }
-        
-        return false;
     }
     
     /**
@@ -230,31 +237,83 @@ class WNAP_TTS_Engine {
     }
     
     /**
-     * Process with eSpeak TTS engine
+     * Web Speech API (FREE, UNLIMITED, NO API KEY)
      * 
-     * eSpeak is a free, open-source TTS engine.
-     * Installation instructions:
-     * - Ubuntu/Debian: sudo apt-get install espeak
-     * - macOS: brew install espeak
-     * - Windows: Download from http://espeak.sourceforge.net/
-     * 
-     * @param string $text Text to convert
-     * @param string $language Language code
-     * @param string $output_file Output file path
+     * @param int $post_id Post ID
+     * @param string $content Text content
      * @param array $settings Plugin settings
-     * @return bool True on success, false on failure
+     * @return array Audio data for client-side processing
      * @since 1.0.0
      */
-    private function process_with_espeak($text, $language, $output_file, $settings) {
-        // Check if espeak is installed
-        $espeak_path = $this->find_espeak_binary();
-        
-        if (!$espeak_path) {
-            // Create a placeholder audio file with error message
-            return $this->create_placeholder_audio($output_file);
+    private function use_web_speech_api($post_id, $content, $settings) {
+        // Return special flag - handled by JavaScript on client-side
+        return array(
+            'type' => 'web_speech',
+            'text' => $content,
+            'voice' => isset($settings['default_language']) ? $settings['default_language'] : 'en-US',
+            'rate' => isset($settings['speech_speed']) ? floatval($settings['speech_speed']) : 1.0,
+            'pitch' => isset($settings['pitch']) ? floatval($settings['pitch']) : 1.0,
+            'post_id' => $post_id
+        );
+    }
+    
+    /**
+     * ResponsiveVoice.js (FREE, 5000/day)
+     * 
+     * @param int $post_id Post ID
+     * @param string $content Text content
+     * @param array $settings Plugin settings
+     * @return array Audio data for client-side processing
+     * @since 1.0.0
+     */
+    private function use_responsive_voice($post_id, $content, $settings) {
+        // Return data for ResponsiveVoice.js - handled by JavaScript on client-side
+        return array(
+            'type' => 'responsive_voice',
+            'text' => $content,
+            'voice' => isset($settings['default_language']) ? $settings['default_language'] : 'UK English Female',
+            'post_id' => $post_id
+        );
+    }
+    
+    /**
+     * eSpeak (FREE, UNLIMITED, SERVER-SIDE)
+     * 
+     * @param int $post_id Post ID
+     * @param string $content Text content
+     * @param array $settings Plugin settings
+     * @return array|false Audio URL or false on failure
+     * @since 1.0.0
+     */
+    private function use_espeak($post_id, $content, $settings) {
+        // Check if eSpeak installed
+        if (!$this->is_espeak_installed()) {
+            return array(
+                'error' => 'eSpeak not installed. Install with: sudo apt-get install espeak'
+            );
         }
         
-        // Map language codes to espeak voices
+        // Get audio directory
+        $upload_dir = wp_upload_dir();
+        $audio_dir = $upload_dir['basedir'] . '/news-audio-pro/' . date('Y/m');
+        
+        if (!file_exists($audio_dir)) {
+            wp_mkdir_p($audio_dir);
+        }
+        
+        $filename = 'post-' . $post_id . '-' . md5($content) . '.wav';
+        $filepath = $audio_dir . '/' . $filename;
+        
+        // Check if file already exists
+        if (file_exists($filepath)) {
+            return array(
+                'type' => 'file',
+                'url' => $upload_dir['baseurl'] . '/news-audio-pro/' . date('Y/m') . '/' . $filename
+            );
+        }
+        
+        // eSpeak command
+        $language = isset($settings['default_language']) ? $settings['default_language'] : 'en-US';
         $voice_map = array(
             'en-US' => 'en-us',
             'en-GB' => 'en-gb',
@@ -265,142 +324,174 @@ class WNAP_TTS_Engine {
             'hi-IN' => 'hi',
             'zh-CN' => 'zh',
         );
-        
-        // Allow developers to customize voice mapping
-        $voice_map = apply_filters('wnap_espeak_voice_map', $voice_map);
-        
         $voice = isset($voice_map[$language]) ? $voice_map[$language] : 'en-us';
+        $speed = isset($settings['speech_speed']) ? intval(floatval($settings['speech_speed']) * 175) : 175;
+        $pitch = isset($settings['pitch']) ? intval(floatval($settings['pitch']) * 50) : 50;
         
-        // Get speed and pitch settings
-        $speed = isset($settings['speech_speed']) ? floatval($settings['speech_speed']) * 100 : 100;
-        $pitch = isset($settings['pitch']) ? floatval($settings['pitch']) * 50 : 50;
-        
-        // Escape text for shell
-        $safe_text = escapeshellarg($text);
-        $safe_output = escapeshellarg($output_file);
-        
-        // Build espeak command
         $command = sprintf(
-            '%s -v %s -s %d -p %d -w %s %s 2>&1',
-            escapeshellcmd($espeak_path),
+            'espeak -v %s -s %d -p %d -w %s %s 2>&1',
             escapeshellarg($voice),
             intval($speed),
             intval($pitch),
-            $safe_output,
-            $safe_text
+            escapeshellarg($filepath),
+            escapeshellarg($content)
         );
         
-        // Execute command
-        $output = array();
-        $return_var = 0;
-        exec($command, $output, $return_var);
+        exec($command, $output, $return_code);
         
-        // Check if file was created
-        if (file_exists($output_file) && filesize($output_file) > 0) {
-            return true;
+        if ($return_code === 0 && file_exists($filepath)) {
+            return array(
+                'type' => 'file',
+                'url' => $upload_dir['baseurl'] . '/news-audio-pro/' . date('Y/m') . '/' . $filename
+            );
         }
         
-        // Fallback to placeholder
-        return $this->create_placeholder_audio($output_file);
+        return array('error' => 'eSpeak generation failed');
     }
     
     /**
-     * Find eSpeak binary
+     * Google Cloud TTS (PAID, API KEY REQUIRED)
      * 
-     * @return string|false Path to espeak binary or false if not found
-     * @since 1.0.0
-     */
-    private function find_espeak_binary() {
-        $possible_paths = array(
-            '/usr/bin/espeak',
-            '/usr/local/bin/espeak',
-            '/opt/homebrew/bin/espeak',
-            'C:\\Program Files\\eSpeak\\command_line\\espeak.exe',
-            'C:\\Program Files (x86)\\eSpeak\\command_line\\espeak.exe',
-        );
-        
-        foreach ($possible_paths as $path) {
-            if (file_exists($path)) {
-                return $path;
-            }
-        }
-        
-        // Try to find using 'which' command
-        $output = array();
-        exec('which espeak 2>&1', $output);
-        if (!empty($output[0]) && file_exists($output[0])) {
-            return $output[0];
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Process with ResponsiveVoice.js
-     * 
-     * Note: This is a client-side solution and requires the audio to be
-     * generated on the frontend. This method creates a placeholder that
-     * will be replaced by the frontend script.
-     * 
-     * @param string $text Text to convert
-     * @param string $language Language code
-     * @param string $output_file Output file path
+     * @param int $post_id Post ID
+     * @param string $content Text content
      * @param array $settings Plugin settings
-     * @return bool True on success, false on failure
+     * @return array|false Audio URL or error
      * @since 1.0.0
      */
-    private function process_with_responsive_voice($text, $language, $output_file, $settings) {
-        // ResponsiveVoice is client-side, so we create a placeholder
-        return $this->create_placeholder_audio($output_file);
-    }
-    
-    /**
-     * Process with Google Cloud TTS API
-     * 
-     * Requires Google Cloud TTS API credentials
-     * 
-     * @param string $text Text to convert
-     * @param string $language Language code
-     * @param string $output_file Output file path
-     * @param array $settings Plugin settings
-     * @return bool True on success, false on failure
-     * @since 1.0.0
-     */
-    private function process_with_google_tts($text, $language, $output_file, $settings) {
-        // This requires Google Cloud TTS API credentials
-        // For now, fall back to espeak
-        return $this->process_with_espeak($text, $language, $output_file, $settings);
-    }
-    
-    /**
-     * Create placeholder audio file
-     * 
-     * Creates a simple MP3 file as placeholder when TTS engine is not available
-     * 
-     * @param string $output_file Output file path
-     * @return bool True on success, false on failure
-     * @since 1.0.0
-     */
-    private function create_placeholder_audio($output_file) {
-        // Create a minimal valid MP3 file (silent audio)
-        // This is a base64-encoded minimal MP3 frame
-        $minimal_mp3 = base64_decode(
-            '//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC' .
-            'AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA' .
-            'gICAgICAgICAgICAgICAgP////////////////////////////////' .
-            '//////////////////////////////8AAABhTEFNRTMuOThyBK8AA' .
-            'AAAAAAAAAAUAAAAAAAAAAOEA1pVAAAAAAAAAAAAAAAAAAAAAAAA' .
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' .
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' .
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' .
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' .
-            'AAAAAAAAAAAAAAAAAAAAAAAA//'
+    private function use_google_tts($post_id, $content, $settings) {
+        $api_key = get_option('wnap_google_tts_api_key');
+        
+        if (empty($api_key)) {
+            return array('error' => 'Google TTS API key required');
+        }
+        
+        $url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' . $api_key;
+        
+        $language = isset($settings['default_language']) ? $settings['default_language'] : 'en-US';
+        $data = array(
+            'input' => array('text' => $content),
+            'voice' => array(
+                'languageCode' => $language,
+                'name' => $language . '-Wavenet-D'
+            ),
+            'audioConfig' => array(
+                'audioEncoding' => 'MP3',
+                'speakingRate' => isset($settings['speech_speed']) ? floatval($settings['speech_speed']) : 1.0,
+                'pitch' => isset($settings['pitch']) ? floatval($settings['pitch']) : 0.0
+            )
         );
         
-        // Write to file
-        $result = file_put_contents($output_file, $minimal_mp3);
+        $response = wp_remote_post($url, array(
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode($data),
+            'timeout' => 30
+        ));
         
-        return $result !== false;
+        if (is_wp_error($response)) {
+            return array('error' => $response->get_error_message());
+        }
+        
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        if (isset($body['audioContent'])) {
+            // Save audio file
+            $upload_dir = wp_upload_dir();
+            $audio_dir = $upload_dir['basedir'] . '/news-audio-pro/' . date('Y/m');
+            wp_mkdir_p($audio_dir);
+            
+            $filename = 'post-' . $post_id . '-google.mp3';
+            $filepath = $audio_dir . '/' . $filename;
+            
+            file_put_contents($filepath, base64_decode($body['audioContent']));
+            
+            return array(
+                'type' => 'file',
+                'url' => $upload_dir['baseurl'] . '/news-audio-pro/' . date('Y/m') . '/' . $filename
+            );
+        }
+        
+        return array('error' => 'Google TTS API error');
+    }
+    
+    /**
+     * Amazon Polly (PAID, AWS CREDENTIALS REQUIRED)
+     * 
+     * @param int $post_id Post ID
+     * @param string $content Text content
+     * @param array $settings Plugin settings
+     * @return array|false Audio URL or error
+     * @since 1.0.0
+     */
+    private function use_amazon_polly($post_id, $content, $settings) {
+        // Check for AWS SDK
+        if (!class_exists('Aws\Polly\PollyClient')) {
+            return array('error' => 'AWS SDK for PHP not installed. Install via Composer: composer require aws/aws-sdk-php');
+        }
+        
+        $access_key = get_option('wnap_aws_access_key');
+        $secret_key = get_option('wnap_aws_secret_key');
+        $region = get_option('wnap_aws_region', 'us-east-1');
+        
+        if (empty($access_key) || empty($secret_key)) {
+            return array('error' => 'AWS credentials required');
+        }
+        
+        try {
+            $polly = new Aws\Polly\PollyClient(array(
+                'version' => 'latest',
+                'region' => $region,
+                'credentials' => array(
+                    'key' => $access_key,
+                    'secret' => $secret_key
+                )
+            ));
+            
+            $result = $polly->synthesizeSpeech(array(
+                'Text' => $content,
+                'OutputFormat' => 'mp3',
+                'VoiceId' => isset($settings['voice_id']) ? $settings['voice_id'] : 'Joanna',
+                'Engine' => 'neural'
+            ));
+            
+            // Save audio
+            $upload_dir = wp_upload_dir();
+            $audio_dir = $upload_dir['basedir'] . '/news-audio-pro/' . date('Y/m');
+            wp_mkdir_p($audio_dir);
+            
+            $filename = 'post-' . $post_id . '-polly.mp3';
+            $filepath = $audio_dir . '/' . $filename;
+            
+            file_put_contents($filepath, $result['AudioStream']);
+            
+            return array(
+                'type' => 'file',
+                'url' => $upload_dir['baseurl'] . '/news-audio-pro/' . date('Y/m') . '/' . $filename
+            );
+            
+        } catch (Exception $e) {
+            return array('error' => 'Amazon Polly error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Check if eSpeak is installed
+     * 
+     * @return bool True if installed, false otherwise
+     * @since 1.0.0
+     */
+    private function is_espeak_installed() {
+        exec('which espeak 2>&1', $output, $return_code);
+        return $return_code === 0;
+    }
+    
+    /**
+     * Get available engines
+     * 
+     * @return array Available engines
+     * @since 1.0.0
+     */
+    public function get_engines() {
+        return $this->engines;
     }
     
     /**

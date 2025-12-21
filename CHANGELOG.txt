@@ -1,6 +1,109 @@
 == Changelog ==
 
-= 1.0.0 - 2025-01-20 =
+= 1.0.0 - 2025-12-21 =
+
+**Complete System Overhaul - Production Ready**
+
+NEW FEATURES:
+
+Floating Button UI:
+* ✨ Animated circular floating button with pulse effect
+* 🎨 Gradient purple/blue design (bottom-right corner)
+* 📱 Fully responsive (desktop, tablet, mobile)
+* 🎮 Play/Pause/Stop controls
+* ⚡ Speed controls (0.5x, 1x, 1.5x, 2x)
+* 📊 Progress bar with time display (MM:SS)
+* 🔒 "Hide Forever" option with localStorage
+* 🌙 Dark mode support
+* ✨ Smooth animations (cubic-bezier transitions)
+* 👆 Draggable positioning
+
+Five TTS Engines (3 Free + 2 Paid):
+* 🌐 Web Speech API (FREE, Unlimited, Browser-based) ⭐ DEFAULT
+* 🎤 ResponsiveVoice.js (FREE, 5,000/day)
+* 🔊 eSpeak (FREE, Unlimited, Server-side)
+* ☁️ Google Cloud TTS (PAID, API Key Required)
+* 🎙️ Amazon Polly (PAID, AWS Credentials Required)
+
+Display Settings System:
+* ✅ Show on Posts checkbox
+* ✅ Show on Pages checkbox
+* ✅ Show on Home Page checkbox
+* ❌ Exclude specific pages by ID (comma-separated)
+* 🔗 Exclude by URL pattern (one per line)
+
+Admin Panel Enhancements:
+* 🎛️ TTS engine selector dropdown
+* 🔄 Dynamic API fields (show/hide based on engine)
+* 🎚️ Speech speed slider (0.5x - 2.0x)
+* 🎚️ Pitch control slider (0.5 - 2.0)
+* 🔊 Volume control (0-100%)
+* 📅 Cache duration setting (1-365 days)
+
+IMPROVEMENTS:
+
+* Updated asset loading logic (loads on configured pages only)
+* Enhanced security with proper sanitization
+* Improved mobile responsive design
+* Better localStorage management
+* Optimized JavaScript performance
+* Added comprehensive documentation
+
+BUG FIXES:
+
+* Fixed license system for localhost and live servers
+* Fixed asset loading on non-post pages
+* Fixed settings sanitization
+* Improved error handling
+
+TECHNICAL CHANGES:
+
+* Complete rewrite of `class-tts-engine.php`
+* Added 5 new engine methods
+* Updated `generate_audio()` method signature
+* Enhanced `class-admin-settings.php` with dynamic fields
+* New `should_show_button()` logic in `class-frontend-popup.php`
+* Extended frontend CSS (+200 lines for floating button)
+* Enhanced frontend JavaScript with Web Speech API
+* Updated default settings in plugin activation
+
+DOCUMENTATION:
+
+* Added TESTING.md - Comprehensive testing guide
+* Added IMPLEMENTATION_GUIDE.md - Detailed implementation docs
+* Updated all inline documentation
+* Added troubleshooting guides
+
+FILES MODIFIED:
+
+* includes/class-tts-engine.php
+* includes/class-admin-settings.php
+* includes/class-frontend-popup.php
+* assets/css/frontend-style.css
+* assets/js/frontend-script.js
+* wp-news-audio-pro.php
+
+FILES CREATED:
+
+* TESTING.md
+* IMPLEMENTATION_GUIDE.md
+
+BREAKING CHANGES:
+
+* Default TTS engine changed from 'espeak' to 'web_speech'
+* New settings added (may require reconfiguration)
+* Asset loading logic changed (respects display settings)
+
+UPGRADE NOTES:
+
+* Existing installations will auto-migrate
+* New default settings will be added
+* Existing audio files remain cached
+* License activation state preserved
+
+---
+
+= 1.0.0-beta - 2025-01-20 =
 
 **Initial Release**
 
@@ -27,7 +130,7 @@ Supported Languages:
 * Hindi
 * Chinese
 
-TTS Engines:
+TTS Engines (Legacy):
 * eSpeak (free, offline)
 * ResponsiveVoice.js (free tier)
 * Google Cloud TTS API (premium)
@@ -72,19 +175,21 @@ Developer Features:
 
 Files Included:
 * Main plugin file (wp-news-audio-pro.php)
-* Core classes (6 files)
+* Core classes (8 files)
 * CSS files (admin and frontend)
 * JavaScript files (admin and frontend)
 * Image assets (icons and banner)
-* Documentation (README.txt, README.md)
+* Documentation (README.txt, README.md, TESTING.md, IMPLEMENTATION_GUIDE.md)
 * License file (GPL v2)
 * Uninstall script
 * Translation template (.pot)
 
 ---
 
-For detailed information about future updates, visit:
+For detailed information about updates, visit:
 https://github.com/Geniusplug/wp-news-audio-pro
 
 For support:
-support@yoursite.com
+Email: info.geniusplugtechnology@gmail.com
+WhatsApp: +880 1761 487193
+Support Portal: https://geniusplug.com/support/

@@ -74,6 +74,12 @@ class WNAP_Admin_Settings {
             'wnap_settings',
             array($this, 'sanitize_settings')
         );
+        
+        // Register API key options separately
+        register_setting('wnap_settings_group', 'wnap_google_tts_api_key', 'sanitize_text_field');
+        register_setting('wnap_settings_group', 'wnap_aws_access_key', 'sanitize_text_field');
+        register_setting('wnap_settings_group', 'wnap_aws_secret_key', 'sanitize_text_field');
+        register_setting('wnap_settings_group', 'wnap_aws_region', 'sanitize_text_field');
     }
     
     /**
@@ -92,7 +98,15 @@ class WNAP_Admin_Settings {
         $sanitized['default_language'] = isset($input['default_language']) ? sanitize_text_field($input['default_language']) : 'en-US';
         $sanitized['player_position'] = isset($input['player_position']) ? sanitize_text_field($input['player_position']) : 'popup';
         
+        // Display settings
+        $sanitized['show_on_posts'] = isset($input['show_on_posts']) ? (bool) $input['show_on_posts'] : false;
+        $sanitized['show_on_pages'] = isset($input['show_on_pages']) ? (bool) $input['show_on_pages'] : false;
+        $sanitized['show_on_home'] = isset($input['show_on_home']) ? (bool) $input['show_on_home'] : false;
+        $sanitized['exclude_pages'] = isset($input['exclude_pages']) ? sanitize_text_field($input['exclude_pages']) : '';
+        $sanitized['exclude_urls'] = isset($input['exclude_urls']) ? sanitize_textarea_field($input['exclude_urls']) : '';
+        
         // Audio settings
+        $sanitized['tts_engine'] = isset($input['tts_engine']) ? sanitize_text_field($input['tts_engine']) : 'web_speech';
         $sanitized['voice_engine'] = isset($input['voice_engine']) ? sanitize_text_field($input['voice_engine']) : 'espeak';
         $sanitized['speech_speed'] = isset($input['speech_speed']) ? floatval($input['speech_speed']) : 1.0;
         $sanitized['pitch'] = isset($input['pitch']) ? floatval($input['pitch']) : 1.0;
@@ -185,6 +199,8 @@ class WNAP_Admin_Settings {
         <form method="post" action="options.php" class="wnap-settings-form">
             <?php settings_fields('wnap_settings_group'); ?>
             
+            <h2><?php esc_html_e('General Settings', 'wp-news-audio-pro'); ?></h2>
+            
             <table class="form-table">
                 <tr>
                     <th scope="row">
@@ -274,6 +290,79 @@ class WNAP_Admin_Settings {
                 </tr>
             </table>
             
+            <h2><?php esc_html_e('Display Settings', 'wp-news-audio-pro'); ?></h2>
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <?php esc_html_e('Show Floating Button On', 'wp-news-audio-pro'); ?>
+                    </th>
+                    <td>
+                        <label>
+                            <input type="checkbox" 
+                                   name="wnap_settings[show_on_posts]" 
+                                   value="1" 
+                                   <?php checked(isset($settings['show_on_posts']) ? $settings['show_on_posts'] : true, true); ?>>
+                            <?php esc_html_e('Posts', 'wp-news-audio-pro'); ?>
+                        </label><br>
+                        
+                        <label>
+                            <input type="checkbox" 
+                                   name="wnap_settings[show_on_pages]" 
+                                   value="1" 
+                                   <?php checked(isset($settings['show_on_pages']) ? $settings['show_on_pages'] : true, true); ?>>
+                            <?php esc_html_e('Pages', 'wp-news-audio-pro'); ?>
+                        </label><br>
+                        
+                        <label>
+                            <input type="checkbox" 
+                                   name="wnap_settings[show_on_home]" 
+                                   value="1" 
+                                   <?php checked(isset($settings['show_on_home']) ? $settings['show_on_home'] : false, true); ?>>
+                            <?php esc_html_e('Home Page', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="exclude_pages">
+                            <?php esc_html_e('Exclude Pages (IDs)', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="text" 
+                               name="wnap_settings[exclude_pages]" 
+                               id="exclude_pages"
+                               value="<?php echo esc_attr(isset($settings['exclude_pages']) ? $settings['exclude_pages'] : ''); ?>" 
+                               class="regular-text">
+                        <p class="description">
+                            <?php esc_html_e('Enter page/post IDs to exclude, separated by commas. Example: 5, 12, 34', 'wp-news-audio-pro'); ?>
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="exclude_urls">
+                            <?php esc_html_e('Exclude by URL Pattern', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <textarea name="wnap_settings[exclude_urls]" 
+                                  id="exclude_urls"
+                                  rows="3" 
+                                  class="large-text"><?php echo esc_textarea(isset($settings['exclude_urls']) ? $settings['exclude_urls'] : ''); ?></textarea>
+                        <p class="description">
+                            <?php esc_html_e('One URL pattern per line. Example:', 'wp-news-audio-pro'); ?><br>
+                            /cart/<br>
+                            /checkout/<br>
+                            /account/
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            
             <?php submit_button(); ?>
         </form>
         <?php
@@ -286,32 +375,114 @@ class WNAP_Admin_Settings {
      * @since 1.0.0
      */
     private function render_audio_tab($settings) {
+        $selected_engine = isset($settings['tts_engine']) ? $settings['tts_engine'] : 'web_speech';
         ?>
         <form method="post" action="options.php" class="wnap-settings-form">
             <?php settings_fields('wnap_settings_group'); ?>
             
+            <h2><?php esc_html_e('Audio Settings', 'wp-news-audio-pro'); ?></h2>
+            
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="voice_engine">
-                            <?php esc_html_e('Voice Engine', 'wp-news-audio-pro'); ?>
+                        <label for="tts_engine">
+                            <?php esc_html_e('TTS Engine', 'wp-news-audio-pro'); ?>
                         </label>
                     </th>
                     <td>
-                        <select name="wnap_settings[voice_engine]" id="voice_engine" class="regular-text">
-                            <option value="espeak" <?php selected(isset($settings['voice_engine']) ? $settings['voice_engine'] : 'espeak', 'espeak'); ?>>
-                                <?php esc_html_e('eSpeak (Free, Offline)', 'wp-news-audio-pro'); ?>
+                        <select name="wnap_settings[tts_engine]" id="wnap_tts_engine" class="regular-text">
+                            <option value="web_speech" <?php selected($selected_engine, 'web_speech'); ?>>
+                                <?php esc_html_e('Web Speech API (FREE - Unlimited) ⭐ RECOMMENDED', 'wp-news-audio-pro'); ?>
                             </option>
-                            <option value="responsivevoice" <?php selected(isset($settings['voice_engine']) ? $settings['voice_engine'] : '', 'responsivevoice'); ?>>
-                                <?php esc_html_e('ResponsiveVoice.js (Free Tier)', 'wp-news-audio-pro'); ?>
+                            <option value="responsive_voice" <?php selected($selected_engine, 'responsive_voice'); ?>>
+                                <?php esc_html_e('ResponsiveVoice.js (FREE - 5,000/day)', 'wp-news-audio-pro'); ?>
                             </option>
-                            <option value="google" <?php selected(isset($settings['voice_engine']) ? $settings['voice_engine'] : '', 'google'); ?>>
-                                <?php esc_html_e('Google Cloud TTS (Paid)', 'wp-news-audio-pro'); ?>
+                            <option value="espeak" <?php selected($selected_engine, 'espeak'); ?>>
+                                <?php esc_html_e('eSpeak (FREE - Unlimited, Server-side)', 'wp-news-audio-pro'); ?>
+                            </option>
+                            <option value="google_tts" <?php selected($selected_engine, 'google_tts'); ?>>
+                                <?php esc_html_e('Google Cloud TTS (PAID - API Key Required)', 'wp-news-audio-pro'); ?>
+                            </option>
+                            <option value="amazon_polly" <?php selected($selected_engine, 'amazon_polly'); ?>>
+                                <?php esc_html_e('Amazon Polly (PAID - AWS Credentials Required)', 'wp-news-audio-pro'); ?>
                             </option>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Select the text-to-speech engine. eSpeak requires installation on the server.', 'wp-news-audio-pro'); ?>
+                            <?php esc_html_e('Default: Web Speech API (no setup needed)', 'wp-news-audio-pro'); ?>
                         </p>
+                    </td>
+                </tr>
+                
+                <!-- Dynamic API Fields (shown based on selection) -->
+                <tr class="wnap-api-field" data-engine="google_tts" style="display: none;">
+                    <th scope="row">
+                        <label for="wnap_google_tts_api_key">
+                            <?php esc_html_e('Google TTS API Key', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="text" 
+                               name="wnap_google_tts_api_key" 
+                               id="wnap_google_tts_api_key"
+                               value="<?php echo esc_attr(get_option('wnap_google_tts_api_key')); ?>" 
+                               class="regular-text">
+                        <p class="description">
+                            <?php esc_html_e('Get your API key from:', 'wp-news-audio-pro'); ?>
+                            <a href="https://console.cloud.google.com/apis/credentials" target="_blank">
+                                <?php esc_html_e('Google Cloud Console', 'wp-news-audio-pro'); ?>
+                            </a>
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr class="wnap-api-field" data-engine="amazon_polly" style="display: none;">
+                    <th scope="row">
+                        <label for="wnap_aws_access_key">
+                            <?php esc_html_e('AWS Access Key', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="text" 
+                               name="wnap_aws_access_key" 
+                               id="wnap_aws_access_key"
+                               value="<?php echo esc_attr(get_option('wnap_aws_access_key')); ?>" 
+                               class="regular-text">
+                    </td>
+                </tr>
+                
+                <tr class="wnap-api-field" data-engine="amazon_polly" style="display: none;">
+                    <th scope="row">
+                        <label for="wnap_aws_secret_key">
+                            <?php esc_html_e('AWS Secret Key', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="password" 
+                               name="wnap_aws_secret_key" 
+                               id="wnap_aws_secret_key"
+                               value="<?php echo esc_attr(get_option('wnap_aws_secret_key')); ?>" 
+                               class="regular-text">
+                    </td>
+                </tr>
+                
+                <tr class="wnap-api-field" data-engine="amazon_polly" style="display: none;">
+                    <th scope="row">
+                        <label for="wnap_aws_region">
+                            <?php esc_html_e('AWS Region', 'wp-news-audio-pro'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <select name="wnap_aws_region" id="wnap_aws_region" class="regular-text">
+                            <option value="us-east-1" <?php selected(get_option('wnap_aws_region', 'us-east-1'), 'us-east-1'); ?>>
+                                <?php esc_html_e('US East (N. Virginia)', 'wp-news-audio-pro'); ?>
+                            </option>
+                            <option value="us-west-2" <?php selected(get_option('wnap_aws_region', 'us-east-1'), 'us-west-2'); ?>>
+                                <?php esc_html_e('US West (Oregon)', 'wp-news-audio-pro'); ?>
+                            </option>
+                            <option value="eu-west-1" <?php selected(get_option('wnap_aws_region', 'us-east-1'), 'eu-west-1'); ?>>
+                                <?php esc_html_e('EU (Ireland)', 'wp-news-audio-pro'); ?>
+                            </option>
+                        </select>
                     </td>
                 </tr>
                 
@@ -383,27 +554,6 @@ class WNAP_Admin_Settings {
                 
                 <tr>
                     <th scope="row">
-                        <label for="audio_format">
-                            <?php esc_html_e('Audio Format', 'wp-news-audio-pro'); ?>
-                        </label>
-                    </th>
-                    <td>
-                        <select name="wnap_settings[audio_format]" id="audio_format" class="regular-text">
-                            <option value="mp3" <?php selected(isset($settings['audio_format']) ? $settings['audio_format'] : 'mp3', 'mp3'); ?>>
-                                <?php esc_html_e('MP3', 'wp-news-audio-pro'); ?>
-                            </option>
-                            <option value="wav" <?php selected(isset($settings['audio_format']) ? $settings['audio_format'] : '', 'wav'); ?>>
-                                <?php esc_html_e('WAV', 'wp-news-audio-pro'); ?>
-                            </option>
-                        </select>
-                        <p class="description">
-                            <?php esc_html_e('Select the audio file format', 'wp-news-audio-pro'); ?>
-                        </p>
-                    </td>
-                </tr>
-                
-                <tr>
-                    <th scope="row">
                         <label for="cache_duration">
                             <?php esc_html_e('Cache Duration (Days)', 'wp-news-audio-pro'); ?>
                         </label>
@@ -422,6 +572,17 @@ class WNAP_Admin_Settings {
                     </td>
                 </tr>
             </table>
+            
+            <script>
+            jQuery(document).ready(function($) {
+                // Show/hide API fields based on engine selection
+                $('#wnap_tts_engine').on('change', function() {
+                    var engine = $(this).val();
+                    $('.wnap-api-field').hide();
+                    $('.wnap-api-field[data-engine="' + engine + '"]').show();
+                }).trigger('change');
+            });
+            </script>
             
             <?php submit_button(); ?>
         </form>

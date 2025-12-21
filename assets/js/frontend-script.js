@@ -317,4 +317,293 @@
         });
     }
     
+    // ===================================
+    // FLOATING BUTTON FUNCTIONALITY
+    // ===================================
+    
+    var speechSynthesis = window.speechSynthesis;
+    var speechUtterance = null;
+    var currentSpeed = 1.0;
+    var audioContent = '';
+    var isPlaying = false;
+    
+    /**
+     * Initialize floating button
+     */
+    function initFloatingButton() {
+        var $btn = $('#wnapFloatingBtn');
+        
+        // Check if button should be hidden forever
+        if (localStorage.getItem('wnap_fab_hidden') === 'true') {
+            return;
+        }
+        
+        // Show button
+        $btn.fadeIn(300);
+        
+        // Closed state - Click to open
+        $('.wnap-fab-closed').on('click', function() {
+            openFloatingButton();
+        });
+        
+        // Close button
+        $('.wnap-fab-close').on('click', function() {
+            closeFloatingButton();
+        });
+        
+        // Play button
+        $('#wnapFabPlay').on('click', function() {
+            playAudio();
+        });
+        
+        // Pause button
+        $('#wnapFabPause').on('click', function() {
+            pauseAudio();
+        });
+        
+        // Stop button
+        $('#wnapFabStop').on('click', function() {
+            stopAudio();
+        });
+        
+        // Speed buttons
+        $('.wnap-speed-btn').on('click', function() {
+            var speed = parseFloat($(this).data('speed'));
+            setSpeed(speed);
+            $('.wnap-speed-btn').removeClass('active');
+            $(this).addClass('active');
+        });
+        
+        // Hide forever button
+        $('.wnap-fab-hide').on('click', function() {
+            localStorage.setItem('wnap_fab_hidden', 'true');
+            $btn.fadeOut(300);
+        });
+        
+        // Load content for Web Speech API
+        loadContentForSpeech();
+    }
+    
+    /**
+     * Open floating button
+     */
+    function openFloatingButton() {
+        $('.wnap-fab-closed').fadeOut(200, function() {
+            $('.wnap-fab-open').fadeIn(300);
+        });
+    }
+    
+    /**
+     * Close floating button
+     */
+    function closeFloatingButton() {
+        $('.wnap-fab-open').fadeOut(200, function() {
+            $('.wnap-fab-closed').fadeIn(300);
+        });
+    }
+    
+    /**
+     * Load content for speech synthesis
+     */
+    function loadContentForSpeech() {
+        // Get post content
+        var content = '';
+        
+        // Try to get content from article/post body
+        if ($('article .entry-content').length) {
+            content = $('article .entry-content').text();
+        } else if ($('.entry-content').length) {
+            content = $('.entry-content').text();
+        } else if ($('article').length) {
+            content = $('article').text();
+        } else if ($('.post-content').length) {
+            content = $('.post-content').text();
+        } else if ($('.content').length) {
+            content = $('.content').text();
+        }
+        
+        // Clean up content
+        content = content.trim().substring(0, 5000); // Limit to 5000 characters
+        audioContent = content;
+    }
+    
+    /**
+     * Play audio using Web Speech API
+     */
+    function playAudio() {
+        if (!speechSynthesis) {
+            alert('Web Speech API not supported in this browser');
+            return;
+        }
+        
+        if (!audioContent) {
+            loadContentForSpeech();
+        }
+        
+        if (!audioContent) {
+            alert('No content to read');
+            return;
+        }
+        
+        // Resume if paused
+        if (speechUtterance && speechSynthesis.paused) {
+            speechSynthesis.resume();
+            isPlaying = true;
+            updatePlayPauseButtons();
+            return;
+        }
+        
+        // Create new utterance
+        speechUtterance = new SpeechSynthesisUtterance(audioContent);
+        
+        // Set voice properties
+        var settings = wnapFrontend.settings || {};
+        var language = settings.default_language || 'en-US';
+        
+        speechUtterance.lang = language;
+        speechUtterance.rate = currentSpeed;
+        speechUtterance.pitch = settings.pitch || 1.0;
+        speechUtterance.volume = (settings.volume || 80) / 100;
+        
+        // Event handlers
+        speechUtterance.onstart = function() {
+            isPlaying = true;
+            updatePlayPauseButtons();
+        };
+        
+        speechUtterance.onend = function() {
+            isPlaying = false;
+            updatePlayPauseButtons();
+            resetProgress();
+        };
+        
+        speechUtterance.onerror = function(event) {
+            console.error('Speech synthesis error:', event);
+            isPlaying = false;
+            updatePlayPauseButtons();
+        };
+        
+        speechUtterance.onpause = function() {
+            isPlaying = false;
+            updatePlayPauseButtons();
+        };
+        
+        // Start speaking
+        speechSynthesis.speak(speechUtterance);
+        
+        // Update progress (approximate)
+        updateProgressBar();
+    }
+    
+    /**
+     * Pause audio
+     */
+    function pauseAudio() {
+        if (speechSynthesis && speechUtterance) {
+            speechSynthesis.pause();
+            isPlaying = false;
+            updatePlayPauseButtons();
+        }
+    }
+    
+    /**
+     * Stop audio
+     */
+    function stopAudio() {
+        if (speechSynthesis) {
+            speechSynthesis.cancel();
+            isPlaying = false;
+            updatePlayPauseButtons();
+            resetProgress();
+        }
+    }
+    
+    /**
+     * Set playback speed
+     */
+    function setSpeed(speed) {
+        currentSpeed = speed;
+        
+        // If currently playing, restart with new speed
+        if (isPlaying && speechSynthesis && speechUtterance) {
+            var wasPaused = speechSynthesis.paused;
+            speechSynthesis.cancel();
+            
+            if (!wasPaused) {
+                // Restart playback with new speed
+                setTimeout(function() {
+                    playAudio();
+                }, 100);
+            }
+        }
+    }
+    
+    /**
+     * Update play/pause buttons
+     */
+    function updatePlayPauseButtons() {
+        if (isPlaying) {
+            $('#wnapFabPlay').hide();
+            $('#wnapFabPause').show();
+        } else {
+            $('#wnapFabPlay').show();
+            $('#wnapFabPause').hide();
+        }
+    }
+    
+    /**
+     * Update progress bar (approximate for Web Speech API)
+     */
+    function updateProgressBar() {
+        if (!isPlaying) return;
+        
+        // Estimate duration based on word count and speed
+        var wordCount = audioContent.split(' ').length;
+        var wordsPerMinute = 150 * currentSpeed; // Average speaking rate
+        var estimatedDuration = (wordCount / wordsPerMinute) * 60; // in seconds
+        
+        var startTime = Date.now();
+        var updateInterval = setInterval(function() {
+            if (!isPlaying) {
+                clearInterval(updateInterval);
+                return;
+            }
+            
+            var elapsed = (Date.now() - startTime) / 1000;
+            var progress = Math.min((elapsed / estimatedDuration) * 100, 100);
+            
+            $('.wnap-progress-fill').css('width', progress + '%');
+            
+            var currentSeconds = Math.floor(elapsed);
+            var totalSeconds = Math.floor(estimatedDuration);
+            var currentMinutes = Math.floor(currentSeconds / 60);
+            var currentSecs = currentSeconds % 60;
+            var totalMinutes = Math.floor(totalSeconds / 60);
+            var totalSecs = totalSeconds % 60;
+            
+            $('.wnap-time').text(
+                currentMinutes + ':' + (currentSecs < 10 ? '0' : '') + currentSecs + 
+                ' / ' + 
+                totalMinutes + ':' + (totalSecs < 10 ? '0' : '') + totalSecs
+            );
+            
+            if (elapsed >= estimatedDuration) {
+                clearInterval(updateInterval);
+            }
+        }, 100);
+    }
+    
+    /**
+     * Reset progress bar
+     */
+    function resetProgress() {
+        $('.wnap-progress-fill').css('width', '0%');
+        $('.wnap-time').text('0:00 / 0:00');
+    }
+    
+    // Initialize floating button on page load
+    if ($('#wnapFloatingBtn').length) {
+        initFloatingButton();
+    }
+    
 })(jQuery);
