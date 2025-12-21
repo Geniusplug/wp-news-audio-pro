@@ -406,12 +406,9 @@
     function openFloatingButton() {
         var $fabOpen = $('.wnap-fab-open');
         $('.wnap-fab-closed').fadeOut(200, function() {
-            // Remove hidden class, ensure it starts hidden for fadeIn animation
-            $fabOpen.removeClass('wnap-fab-hidden');
-            if (!$fabOpen.is(':hidden')) {
-                $fabOpen.hide();
-            }
-            $fabOpen.fadeIn(300);
+            // Remove hidden class and fade in
+            // Note: fadeIn() will set display to 'block' and animate opacity
+            $fabOpen.removeClass('wnap-fab-hidden').hide().fadeIn(300);
         });
     }
     
