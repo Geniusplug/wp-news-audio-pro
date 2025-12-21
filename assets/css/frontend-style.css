@@ -1,0 +1,376 @@
+/**
+ * Frontend Styles
+ * 
+ * Styles for the popup and audio player on the frontend
+ * 
+ * @package WP_News_Audio_Pro
+ * @since 1.0.0
+ */
+
+:root {
+    --wnap-primary: #4A90E2;
+    --wnap-secondary: #7B68EE;
+    --wnap-success: #52C41A;
+    --wnap-danger: #FF4D4F;
+    --wnap-text: #333333;
+    --wnap-bg: #FFFFFF;
+    --wnap-border: #E8E8E8;
+    --wnap-shadow: rgba(0, 0, 0, 0.2);
+}
+
+/* Popup Overlay */
+.wnap-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.wnap-popup-overlay.wnap-show {
+    opacity: 1;
+}
+
+/* Popup Modal */
+.wnap-popup-modal {
+    background-color: var(--wnap-bg);
+    border-radius: 12px;
+    padding: 40px 30px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 40px var(--wnap-shadow);
+    position: relative;
+    transform: translateY(100px);
+    transition: transform 0.3s ease;
+    text-align: center;
+}
+
+.wnap-popup-overlay.wnap-show .wnap-popup-modal {
+    transform: translateY(0);
+}
+
+/* Close Button */
+.wnap-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 32px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.wnap-close:hover {
+    color: var(--wnap-danger);
+    transform: rotate(90deg);
+}
+
+/* Popup Icon */
+.wnap-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    line-height: 1;
+    animation: wnap-bounce 1s ease infinite;
+}
+
+@keyframes wnap-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Popup Text */
+.wnap-popup-modal h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--wnap-text);
+    margin: 0 0 10px 0;
+}
+
+.wnap-popup-modal p {
+    font-size: 16px;
+    color: #666;
+    margin: 0 0 25px 0;
+}
+
+/* Buttons Container */
+.wnap-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Button Styles */
+.wnap-btn {
+    flex: 1;
+    min-width: 180px;
+    padding: 15px 25px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.wnap-btn-audio {
+    background: linear-gradient(135deg, var(--wnap-primary), var(--wnap-secondary));
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+}
+
+.wnap-btn-audio:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+}
+
+.wnap-btn-read {
+    background-color: #f5f5f5;
+    color: var(--wnap-text);
+    border: 2px solid var(--wnap-border);
+}
+
+.wnap-btn-read:hover {
+    background-color: #e9e9e9;
+    transform: translateY(-2px);
+}
+
+/* Checkbox */
+.wnap-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    user-select: none;
+}
+
+.wnap-checkbox input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* Audio Player Container */
+.wnap-player-container {
+    position: fixed;
+    background-color: var(--wnap-bg);
+    border-radius: 12px;
+    box-shadow: 0 5px 25px var(--wnap-shadow);
+    padding: 20px;
+    z-index: 999998;
+    transition: all 0.3s ease;
+}
+
+.wnap-player-floating {
+    bottom: 20px;
+    right: 20px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.wnap-player-fixed-bottom {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.wnap-player-inline {
+    position: relative;
+    margin: 20px auto;
+    max-width: 600px;
+}
+
+/* Player Wrapper */
+.wnap-player-wrapper {
+    position: relative;
+}
+
+.wnap-player-wrapper audio {
+    width: 100%;
+    outline: none;
+}
+
+/* Player Close Button */
+.wnap-player-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 30px;
+    height: 30px;
+    background-color: var(--wnap-danger);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.wnap-player-close:hover {
+    transform: scale(1.1);
+    background-color: #e63939;
+}
+
+/* Plyr.js Custom Styles */
+.plyr {
+    --plyr-color-main: var(--wnap-primary);
+    border-radius: 8px;
+}
+
+.plyr__controls {
+    background: transparent;
+}
+
+/* Loading Indicator */
+.wnap-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.wnap-loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: wnap-spin 1s linear infinite;
+}
+
+@keyframes wnap-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.wnap-loading-text {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .wnap-popup-modal {
+        padding: 30px 20px;
+        max-width: 95%;
+    }
+    
+    .wnap-popup-modal h3 {
+        font-size: 20px;
+    }
+    
+    .wnap-popup-modal p {
+        font-size: 14px;
+    }
+    
+    .wnap-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .wnap-btn {
+        min-width: 100%;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+    
+    .wnap-icon {
+        font-size: 48px;
+    }
+    
+    .wnap-player-floating {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: 100%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .wnap-popup-modal {
+        padding: 25px 15px;
+    }
+    
+    .wnap-close {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* Accessibility */
+.wnap-btn:focus,
+.wnap-close:focus,
+.wnap-player-close:focus {
+    outline: 2px solid var(--wnap-primary);
+    outline-offset: 2px;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --wnap-text: #e0e0e0;
+        --wnap-bg: #1e1e1e;
+        --wnap-border: #444;
+    }
+    
+    .wnap-btn-read {
+        background-color: #333;
+        color: #e0e0e0;
+        border-color: #444;
+    }
+    
+    .wnap-btn-read:hover {
+        background-color: #444;
+    }
+    
+    .wnap-popup-modal p {
+        color: #aaa;
+    }
+    
+    .wnap-checkbox {
+        color: #aaa;
+    }
+}
