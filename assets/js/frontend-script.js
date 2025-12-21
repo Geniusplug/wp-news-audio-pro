@@ -780,9 +780,56 @@
         }, 300);
     }
     
+    /**
+     * Generate audio in background for persistence
+     * This generates server-side audio that persists across page reloads
+     */
+    function generateBackgroundAudio() {
+        // Only generate if we have a post ID
+        if (!wnapFrontend.postId) {
+            return;
+        }
+        
+        // Check if audio already exists
+        var audioGenerated = localStorage.getItem('wnap_audio_generated_' + wnapFrontend.postId);
+        if (audioGenerated === 'true') {
+            console.log('WNAP: Audio already generated for this post');
+            return;
+        }
+        
+        console.log('WNAP: Generating background audio for persistence');
+        
+        // AJAX request to generate audio in background
+        $.ajax({
+            url: wnapFrontend.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'wnap_generate_audio',
+                nonce: wnapFrontend.nonce,
+                post_id: wnapFrontend.postId
+            },
+            success: function(response) {
+                if (response.success) {
+                    console.log('WNAP: Background audio generated successfully');
+                    localStorage.setItem('wnap_audio_generated_' + wnapFrontend.postId, 'true');
+                } else {
+                    console.log('WNAP: Background audio generation failed:', response.data.message);
+                }
+            },
+            error: function() {
+                console.log('WNAP: Background audio generation error');
+            }
+        });
+    }
+    
     // Initialize floating button on page load
     if ($('#wnapFloatingBtn').length) {
         initFloatingButton();
+        
+        // Generate background audio for persistence (non-blocking)
+        setTimeout(function() {
+            generateBackgroundAudio();
+        }, 2000); // Wait 2 seconds after page load to avoid impacting performance
     }
     
 })(jQuery);
