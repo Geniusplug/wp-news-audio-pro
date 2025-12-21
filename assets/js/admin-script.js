@@ -37,12 +37,12 @@
             var purchaseCode = $('#purchase_code').val().trim();
             
             if (!purchaseCode) {
-                showMessage('error', wnapAdmin.strings.error || 'Please enter a purchase code');
+                showMessage('error', '⚠️ Please enter a purchase code');
                 return;
             }
             
             // Show loader
-            $button.prop('disabled', true);
+            $button.prop('disabled', true).text('Verifying...');
             $loader.show();
             $message.hide();
             
@@ -57,7 +57,8 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        showMessage('success', response.data.message);
+                        var successMessage = response.data.message || 'License activated successfully!';
+                        showMessage('success', '✅ ' + successMessage);
                         setTimeout(function() {
                             location.reload();
                         }, 1500);
@@ -69,17 +70,23 @@
                         // Show buy button if needed (URL is sanitized by server)
                         if (response.data.action === 'buy' && response.data.buy_url) {
                             var buyUrl = $('<div>').text(response.data.buy_url).html();
-                            messageHtml += '<br><br><a href="' + buyUrl + '" target="_blank" rel="noopener noreferrer" class="button button-primary" style="margin-top: 10px;">Buy License</a>';
+                            messageHtml += '<br><br><a href="' + buyUrl + '" target="_blank" rel="noopener noreferrer" class="button button-primary">Buy License</a>';
+                        }
+                        
+                        // Show domain info if license is registered elsewhere
+                        if (response.data.domain) {
+                            messageHtml += '<br><small>Currently activated on: <strong>' + $('<div>').text(response.data.domain).html() + '</strong></small>';
                         }
                         
                         showMessage('error', messageHtml);
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error('WNAP License Error:', error);
                     showMessage('error', '⚠️ Connection error. Please check your internet connection and try again.');
                 },
                 complete: function() {
-                    $button.prop('disabled', false);
+                    $button.prop('disabled', false).text('Activate License');
                     $loader.hide();
                 }
             });

@@ -177,8 +177,11 @@
 
 .wnap-license-message {
     margin-top: 20px;
-    padding: 15px;
+    padding: 15px 20px;
     border-radius: 8px;
+    display: none;
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 .wnap-license-message.success {
@@ -191,6 +194,21 @@
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
     color: #721c24;
+}
+
+.wnap-error-icon {
+    font-size: 18px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.wnap-license-message .button {
+    margin-top: 10px;
+    display: inline-block;
+}
+
+.wnap-license-message strong {
+    font-weight: 600;
 }
 
 /* About Section */

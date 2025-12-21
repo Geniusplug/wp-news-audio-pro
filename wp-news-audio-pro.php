@@ -38,7 +38,7 @@ define('WNAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WNAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WNAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('WNAP_ENVATO_ITEM_ID', defined('WNAP_ITEM_ID') ? WNAP_ITEM_ID : ''); // Update after CodeCanyon approval
-define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : ''); // Add via wp-config.php
+define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : 'IRXxacDkuYPM8lFe9NCNZ3rh3RMQTp49'); // Default API token
 
 // Support contact information - intentionally hardcoded for security (cannot be changed by site admin)
 define('WNAP_SUPPORT_EMAIL', defined('WNAP_EMAIL') ? WNAP_EMAIL : 'info.geniusplugtechnology@gmail.com');
@@ -199,6 +199,8 @@ class WP_News_Audio_Pro {
      * @since 1.0.0
      */
     public function activate() {
+        global $wpdb;
+        
         // Set default options
         $default_settings = array(
             'enable_popup' => true,
@@ -215,6 +217,24 @@ class WP_News_Audio_Pro {
         
         add_option('wnap_settings', $default_settings);
         add_option('wnap_version', WNAP_VERSION);
+        
+        // Create license table
+        $table_name = $wpdb->prefix . 'wnap_licenses';
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            purchase_code varchar(255) NOT NULL,
+            domain varchar(255) NOT NULL,
+            status varchar(20) DEFAULT 'active',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY purchase_code (purchase_code)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
         
         // Create upload directory
         $upload_dir = wp_upload_dir();
