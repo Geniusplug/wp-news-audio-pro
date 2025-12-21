@@ -62,8 +62,8 @@
             if (typeof Plyr !== 'undefined' && this.audioElement) {
                 // Wait for Plyr to be initialized
                 setTimeout(() => {
-                    if (window.wnapPlayer) {
-                        this.plyrInstance = window.wnapPlayer;
+                    if (window.WNAP && window.WNAP.player) {
+                        this.plyrInstance = window.WNAP.player;
                     }
                 }, 500);
             }
@@ -83,7 +83,8 @@
                 return;
             }
             
-            const key = e.code || e.key;
+            // Use e.key first for better cross-browser support, fallback to e.code
+            const key = e.key || e.code;
             
             if (this.shortcuts[key]) {
                 e.preventDefault();

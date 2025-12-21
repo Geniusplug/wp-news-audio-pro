@@ -197,8 +197,9 @@
                 volume: wnapFrontend.settings.volume ? wnapFrontend.settings.volume / 100 : 0.8
             });
             
-            // Store player globally for keyboard shortcuts
-            window.wnapPlayer = player;
+            // Store player globally for keyboard shortcuts - use namespace to avoid conflicts
+            window.WNAP = window.WNAP || {};
+            window.WNAP.player = player;
             
             // Restore playback position
             var savedPosition = localStorage.getItem('wnap_playback_position_' + wnapFrontend.postId);

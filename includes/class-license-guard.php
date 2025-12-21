@@ -210,9 +210,17 @@ class WNAP_License_Guard {
     /**
      * Block admin assets from loading (except on license page)
      * 
+     * @param string $hook Current admin page hook
      * @since 1.0.0
      */
     public function block_admin_assets($hook) {
+        // Get current screen for more reliable page detection
+        $screen = get_current_screen();
+        if (!$screen) {
+            return;
+        }
+        
+        // Check if on license tab
         $current_tab = isset($_GET['tab']) ? sanitize_text_field(wp_unslash($_GET['tab'])) : '';
         
         // Allow assets on license tab
@@ -220,8 +228,8 @@ class WNAP_License_Guard {
             return;
         }
         
-        // Block assets on other tabs
-        if (strpos($hook, 'news-audio-pro') !== false) {
+        // Block assets on plugin pages (except license)
+        if (strpos($screen->id, 'news-audio-pro') !== false) {
             wp_dequeue_style('wnap-admin-style');
             wp_dequeue_script('wnap-admin-script');
         }

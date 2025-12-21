@@ -120,10 +120,13 @@ class WNAP_Security_Scanner {
         if (file_exists($license_file)) {
             $content = file_get_contents($license_file);
             
-            // Check for obvious bypass patterns
-            if (strpos($content, 'return true;') !== false && strpos($content, 'is_license_valid') !== false) {
-                $pattern_check = preg_match('/function\s+is_license_valid.*?\{.*?return\s+true\s*;.*?\}/s', $content);
-                if ($pattern_check) {
+            // Check for obvious bypass patterns - more sophisticated detection
+            // Look for is_license_valid function that ONLY returns true without any checks
+            $pattern_check = preg_match('/function\s+is_license_valid\s*\(\s*\)\s*\{[^}]*?return\s+true\s*;[^}]*?\}/s', $content, $matches);
+            if ($pattern_check && isset($matches[0])) {
+                // Check if the match contains any validation logic (if statements, checks, etc.)
+                $function_body = $matches[0];
+                if (!preg_match('/(if\s*\(|&&|\|\||get_option|verify|check|validate)/i', $function_body)) {
                     $this->flag_security_issue('bypass_detected', 'License bypass detected in license manager');
                 }
             }
@@ -296,17 +299,15 @@ class WNAP_Security_Scanner {
         }
         
         // Check for database manipulation
-        global $wpdb;
-        $license_option = $wpdb->get_var($wpdb->prepare(
-            "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
-            'wnap_license'
-        ));
+        $license_option = get_option('wnap_license');
         
         if ($license_option) {
             // Check if it contains suspicious patterns
-            if (stripos($license_option, 'bypass') !== false || 
-                stripos($license_option, 'nulled') !== false ||
-                stripos($license_option, 'cracked') !== false) {
+            $license_str = is_string($license_option) ? $license_option : wp_json_encode($license_option);
+            
+            if (stripos($license_str, 'bypass') !== false || 
+                stripos($license_str, 'nulled') !== false ||
+                stripos($license_str, 'cracked') !== false) {
                 $bypasses[] = array(
                     'type' => 'database_manipulation',
                     'option' => 'wnap_license',
