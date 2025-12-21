@@ -396,10 +396,8 @@ class WP_News_Audio_Pro {
      * @since 1.0.0
      */
     public function enqueue_frontend_assets() {
-        // Check if licensed
-        if (!$this->license_guard || !$this->license_guard->is_licensed()) {
-            return;
-        }
+        // Always load assets so users can see the UI
+        // License checks are done at the AJAX level for actual functionality
         
         // Check if we should load on this page
         $settings = get_option('wnap_settings', array());

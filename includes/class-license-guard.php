@@ -121,8 +121,9 @@ class WNAP_License_Guard {
             // Disable frontend popup
             add_filter('wnap_show_frontend_popup', '__return_false', 999);
             
-            // Prevent asset loading
-            add_action('wp_enqueue_scripts', array($this, 'block_frontend_assets'), 999);
+            // Note: We allow CSS/JS to load for better UX - users can see the UI
+            // Actual functionality is blocked at the AJAX level
+            // add_action('wp_enqueue_scripts', array($this, 'block_frontend_assets'), 999);
             add_action('admin_enqueue_scripts', array($this, 'block_admin_assets'), 999);
             
             // Block AJAX requests
