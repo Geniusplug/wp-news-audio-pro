@@ -527,10 +527,31 @@ class WNAP_Admin_Settings {
             <hr>
             
             <h3><?php esc_html_e('Support', 'wp-news-audio-pro'); ?></h3>
-            <p>
-                <?php esc_html_e('Need help? Contact our support team:', 'wp-news-audio-pro'); ?>
-                <a href="mailto:<?php echo esc_attr(WNAP_SUPPORT_EMAIL); ?>"><?php echo esc_html(WNAP_SUPPORT_EMAIL); ?></a>
-            </p>
+            <div class="wnap-support-card" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-top: 20px;">
+                <div class="wnap-support-item" style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 5px;">
+                    <span class="dashicons dashicons-email-alt" style="color: #4A90E2; font-size: 20px; vertical-align: middle;"></span>
+                    <strong><?php esc_html_e('Email Support', 'wp-news-audio-pro'); ?></strong><br>
+                    <a href="mailto:info.geniusplugtechnology@gmail.com" style="margin-left: 30px;">
+                        info.geniusplugtechnology@gmail.com
+                    </a>
+                </div>
+                
+                <div class="wnap-support-item" style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 5px;">
+                    <span class="dashicons dashicons-whatsapp" style="color: #25D366; font-size: 20px; vertical-align: middle;"></span>
+                    <strong><?php esc_html_e('WhatsApp Support', 'wp-news-audio-pro'); ?></strong><br>
+                    <a href="https://wa.me/8801761487193" target="_blank" style="margin-left: 30px;">
+                        +880 1761 487193
+                    </a>
+                </div>
+                
+                <div class="wnap-support-item" style="padding: 10px; background: white; border-radius: 5px;">
+                    <span class="dashicons dashicons-admin-links" style="color: #7B68EE; font-size: 20px; vertical-align: middle;"></span>
+                    <strong><?php esc_html_e('Support Portal', 'wp-news-audio-pro'); ?></strong><br>
+                    <a href="https://geniusplug.com/support/" target="_blank" style="margin-left: 30px;">
+                        <?php esc_html_e('Submit Ticket', 'wp-news-audio-pro'); ?>
+                    </a>
+                </div>
+            </div>
         </div>
         <?php
     }
@@ -571,6 +592,35 @@ class WNAP_Admin_Settings {
                     </td>
                 </tr>
             </table>
+            
+            <hr>
+            
+            <h3><?php esc_html_e('Support & Contact', 'wp-news-audio-pro'); ?></h3>
+            <div class="wnap-support-card" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-top: 20px;">
+                <div class="wnap-support-item" style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 5px;">
+                    <span class="dashicons dashicons-email-alt" style="color: #4A90E2; font-size: 20px; vertical-align: middle;"></span>
+                    <strong><?php esc_html_e('Email Support', 'wp-news-audio-pro'); ?></strong><br>
+                    <a href="mailto:info.geniusplugtechnology@gmail.com" style="margin-left: 30px;">
+                        info.geniusplugtechnology@gmail.com
+                    </a>
+                </div>
+                
+                <div class="wnap-support-item" style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 5px;">
+                    <span class="dashicons dashicons-whatsapp" style="color: #25D366; font-size: 20px; vertical-align: middle;"></span>
+                    <strong><?php esc_html_e('WhatsApp Support', 'wp-news-audio-pro'); ?></strong><br>
+                    <a href="https://wa.me/8801761487193" target="_blank" style="margin-left: 30px;">
+                        +880 1761 487193
+                    </a>
+                </div>
+                
+                <div class="wnap-support-item" style="padding: 10px; background: white; border-radius: 5px;">
+                    <span class="dashicons dashicons-admin-links" style="color: #7B68EE; font-size: 20px; vertical-align: middle;"></span>
+                    <strong><?php esc_html_e('Support Portal', 'wp-news-audio-pro'); ?></strong><br>
+                    <a href="https://geniusplug.com/support/" target="_blank" style="margin-left: 30px;">
+                        <?php esc_html_e('Submit Ticket', 'wp-news-audio-pro'); ?>
+                    </a>
+                </div>
+            </div>
             
             <hr>
             

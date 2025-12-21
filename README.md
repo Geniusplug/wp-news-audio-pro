@@ -1,24 +1,54 @@
 # 🎙️ WP News Audio Pro
 
-**Convert WordPress posts to audio with animated popup and multi-language TTS support.**
+**Enterprise-level WordPress plugin - Convert posts to audio with premium animated player, bulletproof security, and multi-language TTS support.**
 
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPLv2-green.svg)](LICENSE)
 [![CodeCanyon](https://img.shields.io/badge/CodeCanyon-Ready-orange.svg)](https://codecanyon.net/)
 
-## ✨ Features
+## ✨ Premium Features
 
-- 🎙️ **Multi-Language TTS** - Support for 8+ languages (English, Spanish, French, German, Arabic, Hindi, Chinese)
-- 🎨 **Animated Popup** - Modern, user-friendly interface with smooth transitions
-- 🎵 **Audio Player** - Powered by Plyr.js with playback controls
-- 🔐 **License System** - Envato API verification for secure licensing
+### 🎵 Ultra-Premium Audio Player
+- **Draggable** - Move player anywhere on screen, position saved
+- **Minimizable** - Shrinks to floating FAB with pulse glow animation
+- **Keyboard Shortcuts** - Full keyboard control (Space, arrows, M, Esc)
+- **Glassmorphism Design** - Modern blur effects and gradient animations
+- **Smooth Animations** - Cubic-bezier transitions throughout
+- **Auto-Resume** - Remembers playback position
+- **Time Remaining** - Shows how much time is left
+- **Article Title** - Displays in player header
+- **Mobile Gestures** - Touch-optimized for mobile devices
+
+### 🔐 Military-Grade Security
+- **License-First Architecture** - No features without activation
+- **Domain Fingerprinting** - License tied to specific domain
+- **HMAC Signatures** - Tamper-proof license validation
+- **File Integrity** - SHA-256 checksums of critical files
+- **Nulled Detection** - Scans for pirated patterns
+- **Anti-Bypass** - Blocks filter hijacking and GPL auto-activation
+- **Remote Validation** - Daily license verification with Envato API
+- **Auto-Deactivation** - Immediate shutdown on security breach
+
+### 🎙️ Advanced TTS Features
+- 🌍 **Multi-Language Support** - 8+ languages (English, Spanish, French, German, Arabic, Hindi, Chinese)
+- 🎚️ **Voice Customization** - Speed, pitch, and volume controls
+- 🎵 **Multiple Engines** - eSpeak (offline), ResponsiveVoice, Google TTS
+- 💾 **Smart Caching** - Auto-cleanup of old audio files
 - 📱 **Responsive** - Works perfectly on all devices
-- ♿ **Accessible** - WCAG 2.1 compliant with ARIA labels
-- 🚀 **Optimized** - Intelligent caching and performance-focused
-- 🌐 **Translation Ready** - Fully internationalized with .pot file
-- 💾 **Auto Cleanup** - Automatically removes old audio files
-- ⚙️ **Easy Setup** - Intuitive admin panel with tabbed interface
+
+### 🎨 Premium UI/UX
+- **Animated Popup** - Modern, user-friendly interface
+- **Theme Switcher** - Light/dark mode support
+- **Progress Indicators** - Gradient animated progress bar
+- **Glow Effects** - Buttons with hover animations
+- **Mobile Optimized** - Touch gestures and responsive design
+
+### 📧 Integrated Support
+- **Email Support** - info.geniusplugtechnology@gmail.com
+- **WhatsApp Support** - +880 1761 487193
+- **Support Portal** - https://geniusplug.com/support/
+- **Help Everywhere** - Support cards in admin, error messages, emails
 
 ## 📦 Installation
 
@@ -65,6 +95,52 @@ Navigate to **News Audio Pro** in WordPress admin:
 - Enter CodeCanyon purchase code
 - Activate for current domain
 - View activation status
+- **Note:** Without license activation, NO features are available
+
+## ⌨️ Keyboard Shortcuts
+
+The premium audio player supports full keyboard control:
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play/Pause |
+| `←` | Rewind 10 seconds |
+| `→` | Forward 10 seconds |
+| `↑` | Volume up |
+| `↓` | Volume down |
+| `M` | Mute/Unmute |
+| `Esc` | Close player |
+
+## 🛡️ Security Features
+
+### License Enforcement
+- Complete feature lockdown without valid license
+- Admin shows only license page when unlicensed
+- Frontend completely disabled
+- All AJAX and REST API endpoints blocked
+
+### Anti-Piracy Protection
+- Domain fingerprinting (cannot copy to different domain)
+- HMAC signature verification
+- File integrity monitoring (SHA-256 checksums)
+- Nulled script detection
+- GPL bypass blocker
+- Daily remote validation
+
+### What Happens on Security Breach
+1. Plugin features immediately deactivated
+2. Admin receives email alert
+3. Security notice shown in admin
+4. License revoked
+5. Support contact information displayed
+
+## 📧 Support & Contact
+
+Need help? Our support team is ready to assist:
+
+- **Email:** info.geniusplugtechnology@gmail.com
+- **WhatsApp:** +880 1761 487193
+- **Support Portal:** https://geniusplug.com/support/
 
 ### About
 - Plugin version and changelog
@@ -110,9 +186,12 @@ brew install espeak
 │   ├── /css/
 │   │   ├── admin-style.css        # Admin panel styles
 │   │   ├── frontend-style.css     # Popup and player styles
+│   │   ├── player-premium.css     # Premium glassmorphism styles
 │   ├── /js/
 │   │   ├── admin-script.js        # Admin functionality
 │   │   ├── frontend-script.js     # Popup and player JS
+│   │   ├── player-draggable.js    # Drag functionality
+│   │   ├── player-keyboard.js     # Keyboard shortcuts
 │   ├── /images/
 │   │   ├── icon-128x128.svg       # Plugin icon
 │   │   ├── icon-256x256.svg       # Large icon
@@ -120,7 +199,9 @@ brew install espeak
 ├── /includes/
 │   ├── class-plugin-core.php      # Core functionality
 │   ├── class-tts-engine.php       # Text-to-speech engine
-│   ├── class-license-manager.php  # License verification
+│   ├── class-license-manager.php  # License verification with security
+│   ├── class-license-guard.php    # Feature lockdown system
+│   ├── class-security-scanner.php # Nulled detection & integrity
 │   ├── class-admin-settings.php   # Admin panel
 │   ├── class-frontend-popup.php   # Popup modal
 │   ├── class-audio-player.php     # Audio player
@@ -130,13 +211,35 @@ brew install espeak
 
 ## 🎯 Usage
 
+### Testing Mode (Development)
+
+For development and testing, you can enable test mode in `wp-config.php`:
+
+```php
+// Enable test mode
+define('WNAP_TEST_MODE', true);
+
+// Optional: Custom test license code
+define('WNAP_TEST_LICENSE', 'WNAP-DEV-TEST-2025');
+```
+
+In test mode, you can activate the plugin with the test license code without Envato API validation.
+
 ### Basic Usage
 
 1. Activate the plugin
-2. Configure settings in admin panel
-3. Visit any single post page
-4. Popup will appear automatically
-5. Click "Listen to Audio" to generate and play
+2. **Enter license key** (required for all features)
+3. Configure settings in admin panel
+4. Visit any single post page
+5. Popup will appear automatically (if licensed)
+6. Click "Listen to Audio" to generate and play
+
+### Premium Player Features
+
+- **Drag:** Click and hold the drag handle at the top to move the player
+- **Minimize:** Click the minimize button to shrink to FAB
+- **Keyboard:** Use shortcuts (Space, arrows, M, Esc) for control
+- **Auto-Resume:** Player remembers your position automatically
 
 ### For Developers
 

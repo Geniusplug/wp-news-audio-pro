@@ -39,7 +39,11 @@ define('WNAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WNAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('WNAP_ENVATO_ITEM_ID', defined('WNAP_ITEM_ID') ? WNAP_ITEM_ID : ''); // Update after CodeCanyon approval
 define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : ''); // Add via wp-config.php
-define('WNAP_SUPPORT_EMAIL', defined('WNAP_EMAIL') ? WNAP_EMAIL : 'support@example.com'); // Configure in wp-config.php
+
+// Support contact information - intentionally hardcoded for security (cannot be changed by site admin)
+define('WNAP_SUPPORT_EMAIL', defined('WNAP_EMAIL') ? WNAP_EMAIL : 'info.geniusplugtechnology@gmail.com');
+define('WNAP_SUPPORT_WHATSAPP', '+880 1761 487193');
+define('WNAP_SUPPORT_URL', 'https://geniusplug.com/support/');
 
 /**
  * Main Plugin Class
@@ -93,6 +97,20 @@ class WP_News_Audio_Pro {
     public $frontend_popup;
     
     /**
+     * License guard instance
+     * 
+     * @var WNAP_License_Guard
+     */
+    public $license_guard;
+    
+    /**
+     * Security scanner instance
+     * 
+     * @var WNAP_Security_Scanner
+     */
+    public $security_scanner;
+    
+    /**
      * Audio player instance
      * 
      * @var WNAP_Audio_Player
@@ -129,6 +147,8 @@ class WP_News_Audio_Pro {
         require_once WNAP_PLUGIN_DIR . 'includes/class-plugin-core.php';
         require_once WNAP_PLUGIN_DIR . 'includes/class-tts-engine.php';
         require_once WNAP_PLUGIN_DIR . 'includes/class-license-manager.php';
+        require_once WNAP_PLUGIN_DIR . 'includes/class-license-guard.php';
+        require_once WNAP_PLUGIN_DIR . 'includes/class-security-scanner.php';
         require_once WNAP_PLUGIN_DIR . 'includes/class-admin-settings.php';
         require_once WNAP_PLUGIN_DIR . 'includes/class-frontend-popup.php';
         require_once WNAP_PLUGIN_DIR . 'includes/class-audio-player.php';
@@ -162,9 +182,15 @@ class WP_News_Audio_Pro {
         $this->core = new WNAP_Plugin_Core();
         $this->tts_engine = new WNAP_TTS_Engine();
         $this->license_manager = new WNAP_License_Manager();
+        $this->security_scanner = new WNAP_Security_Scanner();
+        $this->license_guard = new WNAP_License_Guard($this->license_manager);
         $this->admin_settings = new WNAP_Admin_Settings();
-        $this->frontend_popup = new WNAP_Frontend_Popup();
-        $this->audio_player = new WNAP_Audio_Player();
+        
+        // Only initialize frontend features if licensed
+        if ($this->license_guard->is_licensed()) {
+            $this->frontend_popup = new WNAP_Frontend_Popup();
+            $this->audio_player = new WNAP_Audio_Player();
+        }
     }
     
     /**
@@ -290,6 +316,11 @@ class WP_News_Audio_Pro {
             return;
         }
         
+        // Check if licensed
+        if (!$this->license_guard || !$this->license_guard->is_licensed()) {
+            return;
+        }
+        
         // Frontend CSS
         wp_enqueue_style(
             'wnap-frontend-style',
@@ -299,11 +330,38 @@ class WP_News_Audio_Pro {
             'all'
         );
         
+        // Premium Player CSS
+        wp_enqueue_style(
+            'wnap-player-premium',
+            WNAP_PLUGIN_URL . 'assets/css/player-premium.css',
+            array('wnap-frontend-style'),
+            WNAP_VERSION,
+            'all'
+        );
+        
         // Frontend JS
         wp_enqueue_script(
             'wnap-frontend-script',
             WNAP_PLUGIN_URL . 'assets/js/frontend-script.js',
             array('jquery'),
+            WNAP_VERSION,
+            true
+        );
+        
+        // Player Draggable JS
+        wp_enqueue_script(
+            'wnap-player-draggable',
+            WNAP_PLUGIN_URL . 'assets/js/player-draggable.js',
+            array('jquery', 'wnap-frontend-script'),
+            WNAP_VERSION,
+            true
+        );
+        
+        // Player Keyboard JS
+        wp_enqueue_script(
+            'wnap-player-keyboard',
+            WNAP_PLUGIN_URL . 'assets/js/player-keyboard.js',
+            array('jquery', 'wnap-frontend-script'),
             WNAP_VERSION,
             true
         );

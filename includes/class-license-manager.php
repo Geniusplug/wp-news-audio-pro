@@ -129,17 +129,37 @@ class WNAP_License_Manager {
      * @since 1.0.0
      */
     public function activate_license($code, $domain) {
+        // Generate domain fingerprint
+        $fingerprint = $this->generate_domain_fingerprint();
+        
+        // Generate HMAC signature
+        $signature = $this->generate_license_signature($code, $domain, $fingerprint);
+        
         $license_data = array(
             'code' => sanitize_text_field($code),
             'domain' => sanitize_text_field($domain),
             'activated_at' => time(),
             'status' => 'active',
+            'fingerprint' => $fingerprint,
+            'signature' => $signature,
+            'last_checked' => time(),
         );
         
         // Encrypt license data
         $encrypted = $this->encrypt_license_data($license_data);
         
-        return update_option($this->license_option, $encrypted);
+        // Store and create file checksums
+        $result = update_option($this->license_option, $encrypted);
+        
+        if ($result) {
+            // Create file integrity checksums
+            if (class_exists('WNAP_Security_Scanner')) {
+                $scanner = new WNAP_Security_Scanner();
+                $scanner->create_file_checksums();
+            }
+        }
+        
+        return $result;
     }
     
     /**
@@ -211,6 +231,31 @@ class WNAP_License_Manager {
         
         if (!empty($license['domain']) && $license['domain'] !== $current_domain) {
             return false;
+        }
+        
+        // Verify domain fingerprint
+        if (isset($license['fingerprint'])) {
+            $current_fingerprint = $this->generate_domain_fingerprint();
+            if ($license['fingerprint'] !== $current_fingerprint) {
+                // Domain fingerprint mismatch - license copied to different domain
+                $this->deactivate_license();
+                return false;
+            }
+        }
+        
+        // Verify HMAC signature
+        if (isset($license['signature']) && isset($license['code']) && isset($license['domain']) && isset($license['fingerprint'])) {
+            $expected_signature = $this->generate_license_signature(
+                $license['code'],
+                $license['domain'],
+                $license['fingerprint']
+            );
+            
+            if (!hash_equals($license['signature'], $expected_signature)) {
+                // Signature mismatch - license data has been tampered with
+                $this->deactivate_license();
+                return false;
+            }
         }
         
         return true;
@@ -401,5 +446,116 @@ class WNAP_License_Manager {
             </div>
             <?php
         }
+    }
+    
+    /**
+     * Generate domain fingerprint
+     * 
+     * Unique signature from domain, server, and installation data
+     * 
+     * @return string Domain fingerprint hash
+     * @since 1.0.0
+     */
+    private function generate_domain_fingerprint() {
+        $domain = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
+        $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : '';
+        $site_url = get_site_url();
+        $abspath = ABSPATH;
+        $auth_key = defined('AUTH_KEY') ? AUTH_KEY : '';
+        
+        // Combine all data
+        $fingerprint_data = implode('|', array(
+            $domain,
+            $server_ip,
+            $site_url,
+            $abspath,
+            $auth_key,
+        ));
+        
+        // Generate hash
+        return hash('sha256', $fingerprint_data);
+    }
+    
+    /**
+     * Generate HMAC signature for license data
+     * 
+     * @param string $code Purchase code
+     * @param string $domain Domain name
+     * @param string $fingerprint Domain fingerprint
+     * @return string HMAC signature
+     * @since 1.0.0
+     */
+    private function generate_license_signature($code, $domain, $fingerprint) {
+        $data = implode('|', array($code, $domain, $fingerprint));
+        
+        // Use WordPress salts for HMAC key
+        $key = wp_salt('auth') . wp_salt('secure_auth');
+        
+        return hash_hmac('sha256', $data, $key);
+    }
+    
+    /**
+     * Perform remote license validation (daily check)
+     * 
+     * @return bool True if validation passed, false otherwise
+     * @since 1.0.0
+     */
+    public function remote_license_validation() {
+        $license = $this->get_license_data();
+        
+        if (!$license || !isset($license['code'])) {
+            return false;
+        }
+        
+        // Check if we need to validate (once per day)
+        $last_checked = isset($license['last_checked']) ? $license['last_checked'] : 0;
+        $time_since_check = time() - $last_checked;
+        
+        // Check every 24 hours
+        if ($time_since_check < DAY_IN_SECONDS) {
+            return true;
+        }
+        
+        // Verify purchase code again
+        $verification = $this->verify_purchase_code($license['code']);
+        
+        if (is_wp_error($verification)) {
+            // Verification failed
+            $this->deactivate_license();
+            
+            // Send email to admin
+            $this->send_license_failure_email($verification->get_error_message());
+            
+            return false;
+        }
+        
+        // Update last checked time
+        $license['last_checked'] = time();
+        $encrypted = $this->encrypt_license_data($license);
+        update_option($this->license_option, $encrypted);
+        
+        return true;
+    }
+    
+    /**
+     * Send license failure notification email
+     * 
+     * @param string $reason Failure reason
+     * @since 1.0.0
+     */
+    private function send_license_failure_email($reason) {
+        $admin_email = get_option('admin_email');
+        $site_name = get_bloginfo('name');
+        
+        $subject = sprintf('[%s] WP News Audio Pro - License Deactivated', $site_name);
+        
+        $message = "Your WP News Audio Pro license has been deactivated.\n\n";
+        $message .= "Reason: {$reason}\n\n";
+        $message .= "Please contact support to resolve this issue:\n";
+        $message .= "Email: info.geniusplugtechnology@gmail.com\n";
+        $message .= "WhatsApp: +880 1761 487193\n";
+        $message .= "Website: https://geniusplug.com/support/\n";
+        
+        wp_mail($admin_email, $subject, $message);
     }
 }

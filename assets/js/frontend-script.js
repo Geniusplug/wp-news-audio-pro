@@ -66,6 +66,16 @@
         $('.wnap-player-close').on('click', function() {
             hidePlayer();
         });
+        
+        // Minimize player
+        $('.wnap-minimize-btn').on('click', function() {
+            minimizePlayer();
+        });
+        
+        // Restore minimized player
+        $(document).on('click', '.wnap-player-minimized', function() {
+            restorePlayer();
+        });
     });
     
     /**
@@ -187,6 +197,10 @@
                 volume: wnapFrontend.settings.volume ? wnapFrontend.settings.volume / 100 : 0.8
             });
             
+            // Store player globally for keyboard shortcuts - use namespace to avoid conflicts
+            window.WNAP = window.WNAP || {};
+            window.WNAP.player = player;
+            
             // Restore playback position
             var savedPosition = localStorage.getItem('wnap_playback_position_' + wnapFrontend.postId);
             if (savedPosition) {
@@ -196,6 +210,7 @@
             // Save playback position
             player.on('timeupdate', function() {
                 localStorage.setItem('wnap_playback_position_' + wnapFrontend.postId, player.currentTime);
+                updateTimeRemaining();
             });
             
             // Auto-play if enabled
@@ -207,6 +222,15 @@
             player.on('ended', function() {
                 localStorage.removeItem('wnap_playback_position_' + wnapFrontend.postId);
             });
+            
+            // Update playing state for minimized view
+            player.on('play', function() {
+                $('#wnap-player-container').addClass('wnap-playing');
+            });
+            
+            player.on('pause', function() {
+                $('#wnap-player-container').removeClass('wnap-playing');
+            });
         } else {
             // Fallback to native audio controls
             if (wnapFrontend.settings.auto_play) {
@@ -216,10 +240,30 @@
     }
     
     /**
+     * Update time remaining display
+     */
+    function updateTimeRemaining() {
+        if (!player) return;
+        
+        var duration = player.duration;
+        var currentTime = player.currentTime;
+        var remaining = duration - currentTime;
+        
+        if (remaining > 0) {
+            var minutes = Math.floor(remaining / 60);
+            var seconds = Math.floor(remaining % 60);
+            $('.wnap-time-remaining').text('⏱ ' + minutes + ':' + (seconds < 10 ? '0' : '') + seconds + ' remaining');
+        }
+    }
+    
+    /**
      * Show player
      */
     function showPlayer() {
         $('#wnap-player-container').fadeIn(300);
+        
+        // Trigger event for draggable initialization
+        $(document).trigger('wnap-player-shown');
     }
     
     /**
@@ -231,6 +275,24 @@
         if (player) {
             player.pause();
         }
+        
+        $(document).trigger('wnap-player-hidden');
+    }
+    
+    /**
+     * Minimize player to FAB
+     */
+    function minimizePlayer() {
+        $('#wnap-player-container').addClass('wnap-player-minimized');
+        localStorage.setItem('wnap_player_minimized', 'true');
+    }
+    
+    /**
+     * Restore player from minimized state
+     */
+    function restorePlayer() {
+        $('#wnap-player-container').removeClass('wnap-player-minimized');
+        localStorage.removeItem('wnap_player_minimized');
     }
     
     /**
