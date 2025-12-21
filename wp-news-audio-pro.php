@@ -189,11 +189,10 @@ class WP_News_Audio_Pro {
         $this->license_guard = new WNAP_License_Guard($this->license_manager);
         $this->admin_settings = new WNAP_Admin_Settings();
         
-        // Only initialize frontend features if licensed
-        if ($this->license_guard->is_licensed()) {
-            $this->frontend_popup = new WNAP_Frontend_Popup();
-            $this->audio_player = new WNAP_Audio_Player();
-        }
+        // Always initialize frontend features for better UX
+        // The floating button will be visible, functionality is gated at AJAX level
+        $this->frontend_popup = new WNAP_Frontend_Popup();
+        $this->audio_player = new WNAP_Audio_Player();
     }
     
     /**
