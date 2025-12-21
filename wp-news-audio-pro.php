@@ -189,11 +189,11 @@ class WP_News_Audio_Pro {
         $this->license_guard = new WNAP_License_Guard($this->license_manager);
         $this->admin_settings = new WNAP_Admin_Settings();
         
-        // Only initialize frontend features if licensed
-        if ($this->license_guard->is_licensed()) {
-            $this->frontend_popup = new WNAP_Frontend_Popup();
-            $this->audio_player = new WNAP_Audio_Player();
-        }
+        // Always initialize frontend features for better UX
+        // Users can see and interact with the UI, but premium functionality (audio generation)
+        // will show license requirement messages via AJAX responses (see block_ajax_request)
+        $this->frontend_popup = new WNAP_Frontend_Popup();
+        $this->audio_player = new WNAP_Audio_Player();
     }
     
     /**
@@ -396,10 +396,8 @@ class WP_News_Audio_Pro {
      * @since 1.0.0
      */
     public function enqueue_frontend_assets() {
-        // Check if licensed
-        if (!$this->license_guard || !$this->license_guard->is_licensed()) {
-            return;
-        }
+        // Always load assets so users can see the UI
+        // License checks are done at the AJAX level for actual functionality
         
         // Check if we should load on this page
         $settings = get_option('wnap_settings', array());
