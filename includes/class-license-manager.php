@@ -31,7 +31,7 @@ class WNAP_License_Manager {
      * 
      * @var string
      */
-    private $api_token = 'IRXxacDkuYPM8lFe9NCNZ3rh3RMQTp49';
+    private $api_token = '';
     
     /**
      * Envato item ID
@@ -105,7 +105,7 @@ class WNAP_License_Manager {
                     'success' => false,
                     'message' => __('Invalid purchase code format. Please check and try again.', 'wp-news-audio-pro'),
                     'action' => 'buy',
-                    'buy_url' => 'https://codecanyon.net/item/wp-news-audio-pro/ITEM_ID'
+                    'buy_url' => $this->get_buy_url()
                 );
             }
             
@@ -145,7 +145,7 @@ class WNAP_License_Manager {
                     'success' => false,
                     'message' => __('Purchase code not found. Please verify your code.', 'wp-news-audio-pro'),
                     'action' => 'buy',
-                    'buy_url' => 'https://codecanyon.net/item/wp-news-audio-pro/ITEM_ID'
+                    'buy_url' => $this->get_buy_url()
                 );
             }
             
@@ -177,7 +177,7 @@ class WNAP_License_Manager {
                         'success' => false,
                         'message' => __('This purchase code is for a different product.', 'wp-news-audio-pro'),
                         'action' => 'buy',
-                        'buy_url' => 'https://codecanyon.net/item/wp-news-audio-pro/ITEM_ID'
+                        'buy_url' => $this->get_buy_url()
                     );
                 }
             }
@@ -374,6 +374,23 @@ class WNAP_License_Manager {
     }
     
     /**
+     * Get buy URL for license
+     * 
+     * @return string
+     * @since 1.0.0
+     */
+    private function get_buy_url() {
+        $item_id = !empty(WNAP_ENVATO_ITEM_ID) ? WNAP_ENVATO_ITEM_ID : $this->item_id;
+        
+        if ($item_id) {
+            return 'https://codecanyon.net/item/wp-news-audio-pro/' . $item_id;
+        }
+        
+        // Fallback to generic CodeCanyon search
+        return 'https://codecanyon.net/search?term=wp+news+audio+pro';
+    }
+    
+    /**
      * Check if license is valid
      * 
      * @return bool True if license is valid, false otherwise
@@ -470,8 +487,14 @@ class WNAP_License_Manager {
         try {
             $json = wp_json_encode($data);
             
-            // Use AUTH_KEY for encryption key - safe fallback
-            $key = defined('AUTH_KEY') ? AUTH_KEY : 'fallback-key-' . ABSPATH;
+            // Use AUTH_KEY for encryption key - require it to be defined
+            if (!defined('AUTH_KEY') || empty(AUTH_KEY)) {
+                error_log('WNAP: AUTH_KEY not defined - cannot encrypt license data securely');
+                // Still encode but mark as unencrypted
+                return base64_encode($json);
+            }
+            
+            $key = AUTH_KEY;
             
             // Simple XOR encryption with the salt
             $encrypted = '';
@@ -485,6 +508,7 @@ class WNAP_License_Manager {
             return base64_encode($encrypted);
         } catch (Exception $e) {
             error_log('WNAP: Encryption error: ' . $e->getMessage());
+            // Return base64 encoded to maintain compatibility
             return base64_encode(wp_json_encode($data));
         }
     }
@@ -504,8 +528,19 @@ class WNAP_License_Manager {
                 return false;
             }
             
-            // Use AUTH_KEY for decryption key - safe fallback
-            $key = defined('AUTH_KEY') ? AUTH_KEY : 'fallback-key-' . ABSPATH;
+            // Try to decode as JSON first (in case it's not encrypted)
+            $json_data = json_decode($decoded, true);
+            if (is_array($json_data)) {
+                return $json_data;
+            }
+            
+            // Use AUTH_KEY for decryption key
+            if (!defined('AUTH_KEY') || empty(AUTH_KEY)) {
+                error_log('WNAP: AUTH_KEY not defined - cannot decrypt license data');
+                return false;
+            }
+            
+            $key = AUTH_KEY;
             
             // Simple XOR decryption with the salt
             $decrypted = '';
@@ -664,23 +699,24 @@ class WNAP_License_Manager {
         try {
             $data = implode('|', array($code, $domain, $fingerprint));
             
-            // Use AUTH_KEY and SECURE_AUTH_KEY for HMAC key - safe fallback
-            $key_parts = array();
-            if (defined('AUTH_KEY')) {
-                $key_parts[] = AUTH_KEY;
+            // Use AUTH_KEY and SECURE_AUTH_KEY for HMAC key - require them
+            if (!defined('AUTH_KEY') || empty(AUTH_KEY)) {
+                error_log('WNAP: AUTH_KEY not defined - signature security compromised');
+                // Use a hash of the data itself as a last resort
+                return hash_hmac('sha256', $data, hash('sha256', $data . ABSPATH));
             }
-            if (defined('SECURE_AUTH_KEY')) {
+            
+            $key_parts = array(AUTH_KEY);
+            if (defined('SECURE_AUTH_KEY') && !empty(SECURE_AUTH_KEY)) {
                 $key_parts[] = SECURE_AUTH_KEY;
-            }
-            if (empty($key_parts)) {
-                $key_parts[] = 'fallback-key-' . ABSPATH;
             }
             $key = implode('', $key_parts);
             
             return hash_hmac('sha256', $data, $key);
         } catch (Exception $e) {
             error_log('WNAP: Signature generation error: ' . $e->getMessage());
-            return hash_hmac('sha256', $code . $domain . $fingerprint, 'fallback');
+            // Emergency fallback - better than fatal error
+            return hash('sha256', $code . $domain . $fingerprint);
         }
     }
     

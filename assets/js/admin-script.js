@@ -62,12 +62,14 @@
                             location.reload();
                         }, 1500);
                     } else {
-                        var errorMessage = response.data.message || 'An error occurred. Please try again.';
+                        // Sanitize error message to prevent XSS
+                        var errorMessage = $('<div>').text(response.data.message || 'An error occurred. Please try again.').html();
                         var messageHtml = '<span class="wnap-error-icon">⚠️</span> ' + errorMessage;
                         
-                        // Show buy button if needed
+                        // Show buy button if needed (URL is sanitized by server)
                         if (response.data.action === 'buy' && response.data.buy_url) {
-                            messageHtml += '<br><br><a href="' + response.data.buy_url + '" target="_blank" class="button button-primary" style="margin-top: 10px;">Buy License</a>';
+                            var buyUrl = $('<div>').text(response.data.buy_url).html();
+                            messageHtml += '<br><br><a href="' + buyUrl + '" target="_blank" rel="noopener noreferrer" class="button button-primary" style="margin-top: 10px;">Buy License</a>';
                         }
                         
                         showMessage('error', messageHtml);
