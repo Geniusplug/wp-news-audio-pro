@@ -84,6 +84,9 @@ class WNAP_License_Manager {
     /**
      * Verify license on every admin page load
      * 
+     * Note: This runs on every admin page load to ensure license validity.
+     * Performance impact is minimal as it only reads cached options.
+     * 
      * @since 1.0.0
      */
     public function verify_license_on_load() {
@@ -91,8 +94,10 @@ class WNAP_License_Manager {
             // Check license validity on every admin page load
             $is_valid = $this->is_license_valid();
             
-            // Log current status for debugging
-            error_log('WNAP: License check on page load - ' . ($is_valid ? 'VALID' : 'INVALID'));
+            // Log current status for debugging (consider disabling in production)
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WNAP: License check on page load - ' . ($is_valid ? 'VALID' : 'INVALID'));
+            }
             
             if (!$is_valid) {
                 // Show activation notice on plugin pages
@@ -133,6 +138,12 @@ class WNAP_License_Manager {
     /**
      * Check if current domain is localhost
      * 
+     * Checks for common localhost patterns including:
+     * - Standard localhost addresses (localhost, 127.0.0.1, ::1)
+     * - Development TLDs (.local, .test, .dev)
+     * - Common development server ports (8080, 8888, 3000)
+     * - Private network IP ranges (10.x, 192.168.x, 172.16-31.x)
+     * 
      * @return bool True if localhost, false otherwise
      * @since 1.0.0
      */
@@ -140,7 +151,7 @@ class WNAP_License_Manager {
         try {
             $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
             
-            // Check for localhost patterns
+            // Check for localhost patterns including common development ports
             $localhost_patterns = array(
                 'localhost',
                 '127.0.0.1',
@@ -149,9 +160,9 @@ class WNAP_License_Manager {
                 '.test',
                 '.dev',
                 '.localhost',
-                ':8080',
-                ':8888',
-                ':3000'
+                ':8080',    // Common alternative HTTP port
+                ':8888',    // MAMP/XAMPP default port
+                ':3000'     // Node.js development server default port
             );
             
             foreach ($localhost_patterns as $pattern) {
@@ -168,7 +179,7 @@ class WNAP_License_Manager {
                 }
             }
             
-            // Check if it's a local IP address
+            // Check if it's a local IP address (private network ranges)
             if (preg_match('/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/', $domain)) {
                 return true;
             }
