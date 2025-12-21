@@ -113,12 +113,12 @@ class WNAP_Frontend_Popup {
         $settings = get_option('wnap_settings', array());
         
         ?>
-        <div class="wnap-floating-button" id="wnapFloatingBtn" style="display: none;">
+        <div class="wnap-floating-button" id="wnapFloatingBtn">
             <div class="wnap-fab-closed">
                 <span class="wnap-audio-icon">🎧</span>
             </div>
             
-            <div class="wnap-fab-open" style="display: none;">
+            <div class="wnap-fab-open wnap-fab-hidden">
                 <div class="wnap-fab-header">
                     <span class="wnap-fab-title"><?php esc_html_e('Listen to Article', 'wp-news-audio-pro'); ?></span>
                     <button class="wnap-fab-close" aria-label="<?php esc_attr_e('Close', 'wp-news-audio-pro'); ?>">✕</button>
@@ -126,7 +126,7 @@ class WNAP_Frontend_Popup {
                 
                 <div class="wnap-fab-controls">
                     <button class="wnap-fab-play" id="wnapFabPlay" aria-label="<?php esc_attr_e('Play', 'wp-news-audio-pro'); ?>">▶</button>
-                    <button class="wnap-fab-pause" id="wnapFabPause" style="display:none;" aria-label="<?php esc_attr_e('Pause', 'wp-news-audio-pro'); ?>">⏸</button>
+                    <button class="wnap-fab-pause wnap-fab-hidden" id="wnapFabPause" aria-label="<?php esc_attr_e('Pause', 'wp-news-audio-pro'); ?>">⏸</button>
                     <button class="wnap-fab-stop" id="wnapFabStop" aria-label="<?php esc_attr_e('Stop', 'wp-news-audio-pro'); ?>">⏹</button>
                 </div>
                 

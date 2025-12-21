@@ -335,7 +335,7 @@
         if (!('speechSynthesis' in window)) {
             console.error('WNAP: Web Speech API not supported in this browser');
             // Hide button if not supported
-            $('#wnapFloatingBtn').hide();
+            $('#wnapFloatingBtn').addClass('wnap-fab-hidden');
             return;
         }
         
@@ -350,11 +350,11 @@
         // Check if button should be hidden forever
         if (localStorage.getItem('wnap_fab_hidden') === 'true') {
             console.log('WNAP: Floating button hidden by user preference');
+            $btn.addClass('wnap-fab-hidden');
             return;
         }
         
-        // Show button
-        $btn.fadeIn(300);
+        // Button is already visible by default - just log
         console.log('WNAP: Floating button initialized');
         
         // Closed state - Click to open
@@ -393,7 +393,7 @@
         // Hide forever button
         $('.wnap-fab-hide').on('click', function() {
             localStorage.setItem('wnap_fab_hidden', 'true');
-            $btn.fadeOut(300);
+            $btn.addClass('wnap-fab-hidden');
         });
         
         // Load content for Web Speech API
@@ -405,7 +405,7 @@
      */
     function openFloatingButton() {
         $('.wnap-fab-closed').fadeOut(200, function() {
-            $('.wnap-fab-open').fadeIn(300);
+            $('.wnap-fab-open').removeClass('wnap-fab-hidden').hide().fadeIn(300);
         });
     }
     
@@ -414,6 +414,7 @@
      */
     function closeFloatingButton() {
         $('.wnap-fab-open').fadeOut(200, function() {
+            $(this).addClass('wnap-fab-hidden');
             $('.wnap-fab-closed').fadeIn(300);
         });
     }
@@ -577,11 +578,11 @@
      */
     function updatePlayPauseButtons() {
         if (isPlaying) {
-            $('#wnapFabPlay').hide();
-            $('#wnapFabPause').show();
+            $('#wnapFabPlay').addClass('wnap-fab-hidden');
+            $('#wnapFabPause').removeClass('wnap-fab-hidden');
         } else {
-            $('#wnapFabPlay').show();
-            $('#wnapFabPause').hide();
+            $('#wnapFabPlay').removeClass('wnap-fab-hidden');
+            $('#wnapFabPause').addClass('wnap-fab-hidden');
         }
     }
     

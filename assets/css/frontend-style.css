@@ -387,6 +387,11 @@
     transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
+/* Hidden state - controlled by JavaScript */
+.wnap-fab-hidden {
+    display: none !important;
+}
+
 .wnap-fab-closed {
     width: 60px;
     height: 60px;
