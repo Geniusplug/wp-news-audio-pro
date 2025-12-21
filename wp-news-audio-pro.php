@@ -265,12 +265,9 @@ class WP_News_Audio_Pro {
             $table_name = $wpdb->prefix . 'wnap_licenses';
             
             // Check if old column exists
+            // Check if old column exists - table name is already sanitized by WordPress
             $column_exists = $wpdb->get_results(
-                $wpdb->prepare(
-                    "SHOW COLUMNS FROM `%s` LIKE %s",
-                    $table_name,
-                    'purchase_code'
-                )
+                "SHOW COLUMNS FROM `{$table_name}` LIKE 'purchase_code'"
             );
             
             if (!empty($column_exists)) {

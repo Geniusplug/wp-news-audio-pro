@@ -486,7 +486,7 @@ class WNAP_License_Manager {
                 );
             }
             
-            $expires_at = current_time('timestamp') + (90 * DAY_IN_SECONDS);
+            $expires_at = current_time('timestamp') + ($this->test_expiration_days * DAY_IN_SECONDS);
             
             $license_data = array(
                 'type' => 'test',
