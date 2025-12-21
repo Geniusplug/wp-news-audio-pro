@@ -219,23 +219,26 @@ class WP_News_Audio_Pro {
         add_option('wnap_settings', $default_settings);
         add_option('wnap_version', WNAP_VERSION);
         
-        // Create license table
+        // Create license table with hashed purchase code
         $table_name = $wpdb->prefix . 'wnap_licenses';
         $charset_collate = $wpdb->get_charset_collate();
         
         $sql = "CREATE TABLE $table_name (
             id bigint(20) NOT NULL AUTO_INCREMENT,
-            purchase_code varchar(255) NOT NULL,
+            purchase_code_hash varchar(64) NOT NULL,
             domain varchar(255) NOT NULL,
             status varchar(20) DEFAULT 'active',
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
-            UNIQUE KEY purchase_code (purchase_code)
+            UNIQUE KEY purchase_code_hash (purchase_code_hash)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        
+        // Migrate existing data if needed
+        $this->migrate_license_table();
         
         // Create upload directory
         $upload_dir = wp_upload_dir();
@@ -247,6 +250,54 @@ class WP_News_Audio_Pro {
         // Schedule cleanup cron
         if (!wp_next_scheduled('wnap_cleanup_old_audio')) {
             wp_schedule_event(time(), 'daily', 'wnap_cleanup_old_audio');
+        }
+    }
+    
+    /**
+     * Migrate license table from plain text to hashed codes
+     * 
+     * @since 1.0.0
+     */
+    private function migrate_license_table() {
+        global $wpdb;
+        
+        try {
+            $table_name = $wpdb->prefix . 'wnap_licenses';
+            
+            // Check if old column exists
+            $column_exists = $wpdb->get_results(
+                "SHOW COLUMNS FROM $table_name LIKE 'purchase_code'"
+            );
+            
+            if (!empty($column_exists)) {
+                // Get all existing records with plain text codes
+                $existing_licenses = $wpdb->get_results(
+                    "SELECT * FROM $table_name WHERE purchase_code IS NOT NULL AND purchase_code != ''"
+                );
+                
+                if (!empty($existing_licenses)) {
+                    foreach ($existing_licenses as $license) {
+                        // Hash the purchase code
+                        $code_hash = hash('sha256', $license->purchase_code);
+                        
+                        // Update with hash
+                        $wpdb->update(
+                            $table_name,
+                            array('purchase_code_hash' => $code_hash),
+                            array('id' => $license->id),
+                            array('%s'),
+                            array('%d')
+                        );
+                    }
+                }
+                
+                // Drop the old column to ensure security
+                $wpdb->query("ALTER TABLE $table_name DROP COLUMN purchase_code");
+                
+                error_log('WNAP: Successfully migrated license table to use hashed purchase codes');
+            }
+        } catch (Exception $e) {
+            error_log('WNAP: Error migrating license table: ' . $e->getMessage());
         }
     }
     

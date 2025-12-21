@@ -51,13 +51,23 @@ class WNAP_License_Manager {
      */
     public function __construct() {
         try {
-            // Safe initialization - no early WordPress function calls
-            add_action('admin_init', array($this, 'init_license_hooks'));
-            add_action('admin_init', array($this, 'verify_license_on_load'));
+            add_action('plugins_loaded', array($this, 'init_license_check'));
             add_action('wp_ajax_wnap_activate_license', array($this, 'ajax_activate_license'));
             add_action('wp_ajax_wnap_deactivate_license', array($this, 'ajax_deactivate_license'));
         } catch (Exception $e) {
             error_log('WNAP License Manager Constructor Error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Initialize license checking
+     * 
+     * @since 1.0.0
+     */
+    public function init_license_check() {
+        if (is_admin()) {
+            $is_valid = $this->is_license_valid();
+            error_log('WNAP: License check result = ' . ($is_valid ? 'VALID' : 'INVALID'));
         }
     }
     
@@ -229,11 +239,14 @@ class WNAP_License_Manager {
             $table_name = $wpdb->prefix . 'wnap_licenses';
             $current_domain = $this->get_current_domain();
             
+            // Hash the purchase code before checking
+            $code_hash = hash('sha256', $purchase_code);
+            
             // Check if code is already registered
             $existing = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT * FROM $table_name WHERE purchase_code = %s",
-                    $purchase_code
+                    "SELECT * FROM $table_name WHERE purchase_code_hash = %s",
+                    $code_hash
                 )
             );
             
@@ -269,11 +282,14 @@ class WNAP_License_Manager {
         try {
             $table_name = $wpdb->prefix . 'wnap_licenses';
             
+            // Hash the purchase code before storing
+            $code_hash = hash('sha256', $purchase_code);
+            
             // Check if already exists
             $existing = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT * FROM $table_name WHERE purchase_code = %s",
-                    $purchase_code
+                    "SELECT * FROM $table_name WHERE purchase_code_hash = %s",
+                    $code_hash
                 )
             );
             
@@ -286,7 +302,7 @@ class WNAP_License_Manager {
                         'status' => 'active',
                         'updated_at' => current_time('mysql')
                     ),
-                    array('purchase_code' => $purchase_code),
+                    array('purchase_code_hash' => $code_hash),
                     array('%s', '%s', '%s'),
                     array('%s')
                 );
@@ -295,7 +311,7 @@ class WNAP_License_Manager {
                 $result = $wpdb->insert(
                     $table_name,
                     array(
-                        'purchase_code' => $purchase_code,
+                        'purchase_code_hash' => $code_hash,
                         'domain' => $domain,
                         'status' => 'active',
                         'created_at' => current_time('mysql'),
@@ -324,32 +340,8 @@ class WNAP_License_Manager {
         try {
             // Check test code first
             if ($this->verify_test_code($code)) {
-                // Check if test license is expired
-                $license = $this->get_license_data();
-                if ($license && isset($license['type']) && $license['type'] === 'test') {
-                    $activated_at = isset($license['activated_at']) ? $license['activated_at'] : 0;
-                    $days_active = (time() - $activated_at) / DAY_IN_SECONDS;
-                    
-                    if ($days_active > $this->test_expiration_days) {
-                        return array(
-                            'success' => false,
-                            'message' => sprintf(
-                                __('Test license expired after %d days. Please purchase a license.', 'wp-news-audio-pro'),
-                                $this->test_expiration_days
-                            ),
-                            'action' => 'buy',
-                            'buy_url' => $this->get_buy_url()
-                        );
-                    }
-                }
-                
                 // Activate test license
-                $this->activate_test_license($code);
-                return array(
-                    'success' => true,
-                    'message' => __('Test license activated successfully! Valid for 90 days.', 'wp-news-audio-pro'),
-                    'type' => 'test'
-                );
+                return $this->activate_test_code();
             }
             
             // Test code was entered but domain is not localhost
@@ -465,37 +457,8 @@ class WNAP_License_Manager {
                 }
             }
             
-            // Success - register license in database
-            $current_domain = $this->get_current_domain();
-            $registered = $this->register_license_in_db($code, $current_domain);
-            
-            if (!$registered) {
-                return array(
-                    'success' => false,
-                    'message' => __('Failed to register license. Please try again or contact support.', 'wp-news-audio-pro')
-                );
-            }
-            
-            // Prepare license data
-            $license_data = array(
-                'code' => $code,
-                'domain' => $current_domain,
-                'activated_at' => current_time('timestamp'),
-                'buyer' => isset($data->buyer) ? sanitize_text_field($data->buyer) : '',
-                'purchase_date' => isset($data->sold_at) ? sanitize_text_field($data->sold_at) : '',
-                'supported_until' => isset($data->supported_until) ? sanitize_text_field($data->supported_until) : '',
-                'item_id' => isset($data->item->id) ? sanitize_text_field($data->item->id) : '',
-                'item_name' => isset($data->item->name) ? sanitize_text_field($data->item->name) : ''
-            );
-            
-            // Save license (safely)
-            $this->save_license($license_data);
-            
-            return array(
-                'success' => true,
-                'message' => __('License activated successfully! All features are now available.', 'wp-news-audio-pro'),
-                'data' => $license_data
-            );
+            // Success - activate real license
+            return $this->activate_real_code($code, $data);
             
         } catch (Exception $e) {
             error_log('WNAP: Exception in Envato verification: ' . $e->getMessage());
@@ -511,74 +474,92 @@ class WNAP_License_Manager {
      * Activate test license
      * 
      * @param string $code Test code
+     * @return array Result with success status and message
      * @since 1.0.0
      */
-    private function activate_test_license($code) {
+    private function activate_test_code() {
         try {
-            // Calculate expiration
-            $expires_at = current_time('timestamp') + ($this->test_expiration_days * DAY_IN_SECONDS);
+            if (!$this->is_localhost()) {
+                return array(
+                    'success' => false,
+                    'message' => 'Test code only works on localhost'
+                );
+            }
             
-            // Prepare license data
+            $expires_at = strtotime('+90 days');
+            
             $license_data = array(
-                'code' => $code,
                 'type' => 'test',
                 'domain' => $this->get_current_domain(),
                 'activated_at' => current_time('timestamp'),
                 'expires_at' => $expires_at,
-                'status' => 'active',
-                'buyer' => 'Developer (Test)',
-                'license' => 'Test License - 90 Days'
+                'status' => 'active'
             );
             
-            // Save license using the standard save method
-            $this->save_license($license_data);
+            // CRITICAL: Save properly
+            update_option('wnap_license_data', $license_data, false);
+            update_option('wnap_license_status', 'active', false);
             
-            // Also save license type separately for backward compatibility
-            update_option('wnap_license_type', 'test', false);
+            error_log('WNAP: Test license saved - ' . json_encode($license_data));
             
-            // Log for debugging (only in debug mode)
-            $this->debug_log('WNAP: Test license activated successfully - Expires in 90 days');
-            
+            return array(
+                'success' => true,
+                'message' => 'License activated successfully for 90 days'
+            );
         } catch (Exception $e) {
             error_log('WNAP: Error activating test license: ' . $e->getMessage());
+            return array(
+                'success' => false,
+                'message' => 'An unexpected error occurred'
+            );
         }
     }
     
     /**
-     * Save license data safely
+     * Activate real license
      * 
-     * @param array $license_data License data to save
+     * @param string $code Purchase code
+     * @param object $validation Envato API response data
+     * @return array Result with success status and message
      * @since 1.0.0
      */
-    private function save_license($license_data) {
+    private function activate_real_code($code, $validation) {
         try {
-            // Add fingerprint and signature
-            $fingerprint = $this->generate_domain_fingerprint();
-            $signature = $this->generate_license_signature(
-                $license_data['code'],
-                $license_data['domain'],
-                $fingerprint
-            );
+            // Register in domain tracking database
+            $current_domain = $this->get_current_domain();
+            $registered = $this->register_license_in_db($code, $current_domain);
             
-            $license_data['fingerprint'] = $fingerprint;
-            $license_data['signature'] = $signature;
-            $license_data['status'] = 'active';
-            $license_data['last_checked'] = time();
-            
-            // Encrypt license data
-            $encrypted = $this->encrypt_license_data($license_data);
-            
-            // Store license data
-            update_option($this->license_option, $encrypted, false);
-            update_option('wnap_license_status', 'active', false);
-            
-            // Schedule regular checks
-            if (!wp_next_scheduled('wnap_license_check_cron')) {
-                wp_schedule_event(time(), 'weekly', 'wnap_license_check_cron');
+            if (!$registered) {
+                return array(
+                    'success' => false,
+                    'message' => __('Failed to register license. Please try again or contact support.', 'wp-news-audio-pro')
+                );
             }
             
+            $license_data = array(
+                'type' => 'regular',
+                'domain' => $current_domain,
+                'activated_at' => current_time('timestamp'),
+                'buyer' => isset($validation->buyer) ? sanitize_text_field($validation->buyer) : '',
+                'item_id' => isset($validation->item->id) ? sanitize_text_field($validation->item->id) : '',
+                'status' => 'active'
+                // NOTE: NOT storing the purchase code itself!
+            );
+            
+            // Save
+            update_option('wnap_license_data', $license_data, false);
+            update_option('wnap_license_status', 'active', false);
+            
+            return array(
+                'success' => true,
+                'message' => 'License activated successfully'
+            );
         } catch (Exception $e) {
-            error_log('WNAP: Error saving license: ' . $e->getMessage());
+            error_log('WNAP: Error activating real license: ' . $e->getMessage());
+            return array(
+                'success' => false,
+                'message' => 'An unexpected error occurred'
+            );
         }
     }
     
@@ -595,20 +576,22 @@ class WNAP_License_Manager {
             // Get current license data
             $license = $this->get_license_data();
             
-            if ($license && isset($license['code']) && isset($license['type']) && $license['type'] !== 'test') {
-                // Update database to set status as inactive
+            if ($license && isset($license['type']) && $license['type'] !== 'test') {
+                // For real licenses, we need to look up by hash in the database
+                // We don't have the original code stored, so we'll just mark all for this domain as inactive
                 $table_name = $wpdb->prefix . 'wnap_licenses';
+                $current_domain = $this->get_current_domain();
                 $wpdb->update(
                     $table_name,
                     array('status' => 'inactive', 'updated_at' => current_time('mysql')),
-                    array('purchase_code' => $license['code']),
+                    array('domain' => $current_domain),
                     array('%s', '%s'),
                     array('%s')
                 );
             }
             
             // Remove WordPress options
-            delete_option($this->license_option);
+            delete_option('wnap_license_data');
             delete_option('wnap_license_status');
             wp_clear_scheduled_hook('wnap_license_check_cron');
             
@@ -746,97 +729,53 @@ class WNAP_License_Manager {
      */
     public function is_license_valid() {
         try {
+            // Get status
             $status = get_option('wnap_license_status', 'inactive');
             
             if ($status !== 'active') {
-                $this->debug_log('WNAP: License check - status not active');
+                error_log('WNAP: License status is ' . $status);
                 return false;
             }
             
-            $license = $this->get_license_data();
+            // Get license data
+            $license = get_option('wnap_license_data');
             
             if (!$license || !is_array($license)) {
-                $this->debug_log('WNAP: License check - no license data found');
+                error_log('WNAP: No license data found');
                 return false;
             }
             
-            // Check status
-            if (!isset($license['status']) || $license['status'] !== 'active') {
-                $this->debug_log('WNAP: License check - license status field not active');
-                return false;
-            }
+            // Check type
+            $type = isset($license['type']) ? $license['type'] : 'regular';
             
-            // Check if test license
-            if (isset($license['type']) && $license['type'] === 'test') {
-                $this->debug_log('WNAP: Checking test license validity');
-                
-                // Verify still on localhost
+            // For test licenses
+            if ($type === 'test') {
+                // Verify localhost
                 if (!$this->is_localhost()) {
-                    $this->debug_log('WNAP: Test license invalid - not on localhost');
-                    $this->deactivate_license();
+                    error_log('WNAP: Test license but not localhost');
                     return false;
                 }
                 
                 // Check expiration
                 if (isset($license['expires_at']) && $license['expires_at'] < time()) {
-                    $this->debug_log('WNAP: Test license expired');
-                    $this->deactivate_license();
+                    error_log('WNAP: Test license expired');
                     return false;
                 }
                 
-                // Also check using activated_at for backward compatibility
-                $activated_at = isset($license['activated_at']) ? $license['activated_at'] : 0;
-                $days_active = (time() - $activated_at) / DAY_IN_SECONDS;
-                
-                if ($days_active > $this->test_expiration_days) {
-                    $this->debug_log('WNAP: Test license expired (checked via activated_at)');
-                    $this->deactivate_license();
-                    return false;
-                }
-                
-                // Test license is valid - return early, skip domain/fingerprint checks
-                $this->debug_log('WNAP: Test license is VALID');
+                error_log('WNAP: Test license VALID');
                 return true;
             }
             
-            // Regular license - check domain match
+            // For regular licenses - verify domain
             $current_domain = $this->get_current_domain();
+            $licensed_domain = isset($license['domain']) ? $license['domain'] : '';
             
-            if (isset($license['domain']) && !empty($license['domain'])) {
-                if ($license['domain'] !== $current_domain) {
-                    $this->debug_log('WNAP: License domain mismatch');
-                    return false;
-                }
+            if ($current_domain !== $licensed_domain) {
+                error_log('WNAP: Domain mismatch');
+                return false;
             }
             
-            // Verify domain fingerprint
-            if (isset($license['fingerprint'])) {
-                $current_fingerprint = $this->generate_domain_fingerprint();
-                if ($license['fingerprint'] !== $current_fingerprint) {
-                    // Domain fingerprint mismatch - license copied to different domain
-                    $this->debug_log('WNAP: Domain fingerprint mismatch');
-                    $this->deactivate_license();
-                    return false;
-                }
-            }
-            
-            // Verify HMAC signature
-            if (isset($license['signature']) && isset($license['code']) && isset($license['domain']) && isset($license['fingerprint'])) {
-                $expected_signature = $this->generate_license_signature(
-                    $license['code'],
-                    $license['domain'],
-                    $license['fingerprint']
-                );
-                
-                if (!hash_equals($license['signature'], $expected_signature)) {
-                    // Signature mismatch - license data has been tampered with
-                    $this->debug_log('WNAP: License signature mismatch');
-                    $this->deactivate_license();
-                    return false;
-                }
-            }
-            
-            $this->debug_log('WNAP: Regular license is VALID');
+            error_log('WNAP: Regular license VALID');
             return true;
             
         } catch (Exception $e) {
@@ -853,13 +792,13 @@ class WNAP_License_Manager {
      */
     public function get_license_data() {
         try {
-            $encrypted = get_option($this->license_option, false);
+            $license_data = get_option('wnap_license_data', false);
             
-            if (!$encrypted) {
+            if (!$license_data || !is_array($license_data)) {
                 return false;
             }
             
-            return $this->decrypt_license_data($encrypted);
+            return $license_data;
         } catch (Exception $e) {
             error_log('WNAP: Error getting license data: ' . $e->getMessage());
             return false;
