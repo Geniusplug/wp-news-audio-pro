@@ -357,9 +357,11 @@
         // Button is already visible by default - just log
         console.log('WNAP: Floating button initialized');
         
-        // Closed state - Click to open
+        // Closed state - Click to open AND start playing instantly
         $('.wnap-fab-closed').on('click', function() {
             openFloatingButton();
+            // Start playing audio instantly
+            playAudio();
         });
         
         // Close button
