@@ -1,0 +1,437 @@
+/**
+ * Premium Player Styles
+ * 
+ * Glassmorphism effects, animations, and premium design
+ * 
+ * @package WP_News_Audio_Pro
+ * @since 1.0.0
+ */
+
+/* Glassmorphism Container */
+.wnap-player-container {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    will-change: transform;
+}
+
+/* Dark mode glassmorphism */
+@media (prefers-color-scheme: dark) {
+    .wnap-player-container {
+        background: rgba(30, 30, 30, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Drag Handle */
+.wnap-drag-handle {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 24px;
+    background: linear-gradient(135deg, #4A90E2, #7B68EE);
+    border-radius: 12px 12px 0 0;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.wnap-drag-handle:hover {
+    width: 70px;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.5);
+}
+
+.wnap-drag-handle .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Dragging state */
+.wnap-dragging {
+    opacity: 0.95;
+    cursor: move !important;
+    transition: none !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25) !important;
+}
+
+.wnap-dragging * {
+    cursor: move !important;
+}
+
+/* Animated Gradient Background */
+.wnap-player-wrapper {
+    position: relative;
+    background: linear-gradient(-45deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa);
+    background-size: 400% 400%;
+    animation: wnap-gradient-shift 15s ease infinite;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+@keyframes wnap-gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@media (prefers-color-scheme: dark) {
+    .wnap-player-wrapper {
+        background: linear-gradient(-45deg, #1a1a1a, #2a2a2a, #1e1e1e, #252525);
+        background-size: 400% 400%;
+    }
+}
+
+/* Player Header with Title */
+.wnap-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.wnap-player-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .wnap-player-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .wnap-player-title {
+        color: #e0e0e0;
+    }
+}
+
+/* Minimize Button */
+.wnap-minimize-btn {
+    position: absolute;
+    top: -10px;
+    right: 30px;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #4A90E2, #7B68EE);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.wnap-minimize-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.5);
+}
+
+/* Minimized State - Floating Action Button (FAB) */
+.wnap-player-minimized {
+    width: 60px !important;
+    height: 60px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: linear-gradient(135deg, #4A90E2, #7B68EE) !important;
+    animation: wnap-pulse-glow 2s ease-in-out infinite;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wnap-player-minimized:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 32px rgba(74, 144, 226, 0.6);
+}
+
+.wnap-player-minimized .wnap-player-wrapper {
+    display: none;
+}
+
+.wnap-player-minimized::before {
+    content: "▶";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: white;
+    animation: wnap-pulse 1.5s ease-in-out infinite;
+}
+
+.wnap-player-minimized.wnap-playing::before {
+    content: "❚❚";
+}
+
+@keyframes wnap-pulse-glow {
+    0%, 100% {
+        box-shadow: 0 4px 20px rgba(74, 144, 226, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 40px rgba(74, 144, 226, 0.8);
+    }
+}
+
+@keyframes wnap-pulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+/* Progress Bar with Gradient Animation */
+.plyr__progress {
+    background: linear-gradient(90deg, #4A90E2, #7B68EE);
+    background-size: 200% 100%;
+    animation: wnap-progress-shine 3s linear infinite;
+}
+
+@keyframes wnap-progress-shine {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Glow Effects on Buttons */
+.plyr__control {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.plyr__control:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
+}
+
+.plyr__control--pressed,
+.plyr__control[aria-expanded="true"] {
+    background: linear-gradient(135deg, #4A90E2, #7B68EE);
+    color: white;
+}
+
+/* Custom Volume Slider */
+.plyr__volume input[type="range"] {
+    background: linear-gradient(90deg, #4A90E2, #7B68EE);
+}
+
+.plyr__volume input[type="range"]::-webkit-slider-thumb {
+    background: white;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.5);
+}
+
+.plyr__volume input[type="range"]::-moz-range-thumb {
+    background: white;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.5);
+}
+
+/* Time Display with Enhanced Style */
+.plyr__time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #4A90E2;
+}
+
+/* Theme Switcher Button */
+.wnap-theme-switcher {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wnap-theme-switcher:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: rotate(180deg);
+}
+
+.wnap-theme-switcher::before {
+    content: "☀";
+    font-size: 16px;
+}
+
+.wnap-dark-theme .wnap-theme-switcher::before {
+    content: "🌙";
+}
+
+/* Reading Speed Indicator */
+.wnap-speed-indicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    background: rgba(74, 144, 226, 0.2);
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4A90E2;
+}
+
+/* Keyboard Shortcut Indicator */
+.wnap-shortcut-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.wnap-shortcut-indicator.wnap-show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Smooth Transitions */
+.wnap-player-container,
+.wnap-player-wrapper,
+.plyr__control,
+.wnap-minimize-btn,
+.wnap-drag-handle {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+    .wnap-drag-handle {
+        width: 50px;
+        height: 20px;
+        font-size: 12px;
+    }
+    
+    .wnap-minimize-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 16px;
+    }
+    
+    .wnap-player-minimized {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .wnap-shortcut-indicator {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
+
+/* Touch Device Improvements */
+@media (hover: none) and (pointer: coarse) {
+    .wnap-drag-handle {
+        height: 28px;
+    }
+    
+    .plyr__control {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+/* Loading State Animation */
+.wnap-player-loading {
+    position: relative;
+}
+
+.wnap-player-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid rgba(74, 144, 226, 0.3);
+    border-top-color: #4A90E2;
+    border-radius: 50%;
+    animation: wnap-spin 1s linear infinite;
+}
+
+@keyframes wnap-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Voice Selection Dropdown */
+.wnap-voice-selector {
+    margin: 10px 0;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(74, 144, 226, 0.3);
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wnap-voice-selector:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: #4A90E2;
+}
+
+@media (prefers-color-scheme: dark) {
+    .wnap-voice-selector {
+        background: rgba(255, 255, 255, 0.1);
+        color: #e0e0e0;
+    }
+    
+    .wnap-voice-selector:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* Accessibility Improvements */
+.wnap-player-container:focus-within {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15),
+                0 0 0 3px rgba(74, 144, 226, 0.5);
+}
+
+/* Print Styles */
+@media print {
+    .wnap-player-container {
+        display: none !important;
+    }
+}

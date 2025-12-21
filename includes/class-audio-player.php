@@ -61,14 +61,31 @@ class WNAP_Audio_Player {
             $container_class .= ' wnap-player-floating';
         }
         
+        // Get post title for player header
+        $post_title = get_the_title();
+        
         ?>
         <div id="wnap-player-container" class="<?php echo esc_attr($container_class); ?>" style="display: none;">
+            <button class="wnap-minimize-btn" aria-label="<?php esc_attr_e('Minimize player', 'wp-news-audio-pro'); ?>" title="<?php esc_attr_e('Minimize', 'wp-news-audio-pro'); ?>">
+                <span class="dashicons dashicons-minus"></span>
+            </button>
+            <button class="wnap-player-close" aria-label="<?php esc_attr_e('Close player', 'wp-news-audio-pro'); ?>" title="<?php esc_attr_e('Close (Esc)', 'wp-news-audio-pro'); ?>">×</button>
+            
             <div class="wnap-player-wrapper">
+                <div class="wnap-player-header">
+                    <div class="wnap-player-title" title="<?php echo esc_attr($post_title); ?>">
+                        🎧 <?php echo esc_html($post_title); ?>
+                    </div>
+                </div>
+                
                 <audio id="wnap-audio-player" controls>
                     <source src="" type="audio/mpeg">
                     <?php esc_html_e('Your browser does not support the audio element.', 'wp-news-audio-pro'); ?>
                 </audio>
-                <button class="wnap-player-close" aria-label="<?php esc_attr_e('Close player', 'wp-news-audio-pro'); ?>">×</button>
+                
+                <div class="wnap-player-info" style="margin-top: 10px; font-size: 11px; color: #666; text-align: center;">
+                    <span class="wnap-time-remaining"></span>
+                </div>
             </div>
         </div>
         <?php

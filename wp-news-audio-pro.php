@@ -314,6 +314,11 @@ class WP_News_Audio_Pro {
             return;
         }
         
+        // Check if licensed
+        if (!$this->license_guard || !$this->license_guard->is_licensed()) {
+            return;
+        }
+        
         // Frontend CSS
         wp_enqueue_style(
             'wnap-frontend-style',
@@ -323,11 +328,38 @@ class WP_News_Audio_Pro {
             'all'
         );
         
+        // Premium Player CSS
+        wp_enqueue_style(
+            'wnap-player-premium',
+            WNAP_PLUGIN_URL . 'assets/css/player-premium.css',
+            array('wnap-frontend-style'),
+            WNAP_VERSION,
+            'all'
+        );
+        
         // Frontend JS
         wp_enqueue_script(
             'wnap-frontend-script',
             WNAP_PLUGIN_URL . 'assets/js/frontend-script.js',
             array('jquery'),
+            WNAP_VERSION,
+            true
+        );
+        
+        // Player Draggable JS
+        wp_enqueue_script(
+            'wnap-player-draggable',
+            WNAP_PLUGIN_URL . 'assets/js/player-draggable.js',
+            array('jquery', 'wnap-frontend-script'),
+            WNAP_VERSION,
+            true
+        );
+        
+        // Player Keyboard JS
+        wp_enqueue_script(
+            'wnap-player-keyboard',
+            WNAP_PLUGIN_URL . 'assets/js/player-keyboard.js',
+            array('jquery', 'wnap-frontend-script'),
             WNAP_VERSION,
             true
         );
