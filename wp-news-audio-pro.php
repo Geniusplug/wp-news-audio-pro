@@ -266,13 +266,17 @@ class WP_News_Audio_Pro {
             
             // Check if old column exists
             $column_exists = $wpdb->get_results(
-                "SHOW COLUMNS FROM $table_name LIKE 'purchase_code'"
+                $wpdb->prepare(
+                    "SHOW COLUMNS FROM `%s` LIKE %s",
+                    $table_name,
+                    'purchase_code'
+                )
             );
             
             if (!empty($column_exists)) {
                 // Get all existing records with plain text codes
                 $existing_licenses = $wpdb->get_results(
-                    "SELECT * FROM $table_name WHERE purchase_code IS NOT NULL AND purchase_code != ''"
+                    "SELECT * FROM `{$table_name}` WHERE purchase_code IS NOT NULL AND purchase_code != ''"
                 );
                 
                 if (!empty($existing_licenses)) {
@@ -291,10 +295,14 @@ class WP_News_Audio_Pro {
                     }
                 }
                 
-                // Drop the old column to ensure security
-                $wpdb->query("ALTER TABLE $table_name DROP COLUMN purchase_code");
+                // Drop the old column to ensure security - use backticks for safety
+                $result = $wpdb->query("ALTER TABLE `{$table_name}` DROP COLUMN `purchase_code`");
                 
-                error_log('WNAP: Successfully migrated license table to use hashed purchase codes');
+                if ($result !== false) {
+                    error_log('WNAP: Successfully migrated license table to use hashed purchase codes');
+                } else {
+                    error_log('WNAP: Failed to drop purchase_code column: ' . $wpdb->last_error);
+                }
             }
         } catch (Exception $e) {
             error_log('WNAP: Error migrating license table: ' . $e->getMessage());
