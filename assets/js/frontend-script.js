@@ -40,11 +40,16 @@
             }
         });
         
-        // Listen to Audio button
+        // Listen to Audio button - Use Web Speech API for instant playback
         $('.wnap-btn-audio').on('click', function() {
-            var postId = $(this).data('post-id');
-            loadAndPlayAudio(postId);
             hidePopup();
+            // Open the floating button and start playing instantly
+            if ($('#wnapFloatingBtn').length) {
+                openFloatingButton();
+                setTimeout(function() {
+                    playAudio();
+                }, 100);
+            }
         });
         
         // Read Article button
@@ -357,11 +362,13 @@
         // Button is already visible by default - just log
         console.log('WNAP: Floating button initialized');
         
-        // Closed state - Click to open AND start playing instantly
+        // Closed state - Click to open and start playing instantly
         $('.wnap-fab-closed').on('click', function() {
             openFloatingButton();
-            // Start playing audio instantly
-            playAudio();
+            // Start playing audio instantly for one-click experience
+            setTimeout(function() {
+                playAudio();
+            }, 100); // Small delay to ensure button is opened
         });
         
         // Close button
