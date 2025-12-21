@@ -190,7 +190,8 @@ class WP_News_Audio_Pro {
         $this->admin_settings = new WNAP_Admin_Settings();
         
         // Always initialize frontend features for better UX
-        // The floating button will be visible, functionality is gated at AJAX level
+        // Users can see and interact with the UI, but premium functionality (audio generation)
+        // will show license requirement messages via AJAX responses (see block_ajax_request)
         $this->frontend_popup = new WNAP_Frontend_Popup();
         $this->audio_player = new WNAP_Audio_Player();
     }
