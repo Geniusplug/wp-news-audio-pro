@@ -62,11 +62,19 @@
                             location.reload();
                         }, 1500);
                     } else {
-                        showMessage('error', response.data.message);
+                        var errorMessage = response.data.message || 'An error occurred. Please try again.';
+                        var messageHtml = '<span class="wnap-error-icon">⚠️</span> ' + errorMessage;
+                        
+                        // Show buy button if needed
+                        if (response.data.action === 'buy' && response.data.buy_url) {
+                            messageHtml += '<br><br><a href="' + response.data.buy_url + '" target="_blank" class="button button-primary" style="margin-top: 10px;">Buy License</a>';
+                        }
+                        
+                        showMessage('error', messageHtml);
                     }
                 },
                 error: function() {
-                    showMessage('error', 'An error occurred. Please try again.');
+                    showMessage('error', '⚠️ Connection error. Please check your internet connection and try again.');
                 },
                 complete: function() {
                     $button.prop('disabled', false);
@@ -116,7 +124,7 @@
             $message
                 .removeClass('success error')
                 .addClass(type)
-                .text(message)
+                .html(message) // Changed from .text() to .html() to support HTML content
                 .fadeIn();
         }
         
