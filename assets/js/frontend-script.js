@@ -404,8 +404,14 @@
      * Open floating button
      */
     function openFloatingButton() {
+        var $fabOpen = $('.wnap-fab-open');
         $('.wnap-fab-closed').fadeOut(200, function() {
-            $('.wnap-fab-open').removeClass('wnap-fab-hidden').hide().fadeIn(300);
+            $fabOpen.removeClass('wnap-fab-hidden');
+            // If display was set by jQuery, reset it
+            if ($fabOpen.css('display') === 'none') {
+                $fabOpen.css('display', '');
+            }
+            $fabOpen.fadeIn(300);
         });
     }
     
