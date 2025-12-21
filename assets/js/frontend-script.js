@@ -464,9 +464,13 @@
         }
         
         // Get auto-hide delay from settings (default 30 seconds)
-        var autoHideDelay = (wnapFrontend.settings && wnapFrontend.settings.auto_hide_delay) 
-            ? parseInt(wnapFrontend.settings.auto_hide_delay) * 1000 
-            : 30000;
+        var autoHideDelay = 30000; // Default
+        if (wnapFrontend.settings && wnapFrontend.settings.auto_hide_delay) {
+            var delay = parseInt(wnapFrontend.settings.auto_hide_delay, 10);
+            if (!isNaN(delay) && delay >= 5 && delay <= 300) {
+                autoHideDelay = delay * 1000;
+            }
+        }
         
         // Don't auto-hide if audio is playing
         if (isPlaying) {
@@ -490,9 +494,13 @@
         }
         
         // Get auto-reopen delay from settings (default 60 seconds)
-        var autoReopenDelay = (wnapFrontend.settings && wnapFrontend.settings.auto_reopen_delay) 
-            ? parseInt(wnapFrontend.settings.auto_reopen_delay) * 1000 
-            : 60000;
+        var autoReopenDelay = 60000; // Default
+        if (wnapFrontend.settings && wnapFrontend.settings.auto_reopen_delay) {
+            var delay = parseInt(wnapFrontend.settings.auto_reopen_delay, 10);
+            if (!isNaN(delay) && delay >= 10 && delay <= 600) {
+                autoReopenDelay = delay * 1000;
+            }
+        }
         
         // Set timer to auto-reopen
         autoReopenTimer = setTimeout(function() {
@@ -788,6 +796,26 @@
         // Only generate if we have a post ID
         if (!wnapFrontend.postId) {
             return;
+        }
+        
+        // Clean up old localStorage entries (keep only last 50 posts)
+        try {
+            var audioKeys = [];
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (key && key.startsWith('wnap_audio_generated_')) {
+                    audioKeys.push(key);
+                }
+            }
+            // Remove oldest entries if we have more than 50
+            if (audioKeys.length > 50) {
+                audioKeys.sort();
+                for (var j = 0; j < audioKeys.length - 50; j++) {
+                    localStorage.removeItem(audioKeys[j]);
+                }
+            }
+        } catch (e) {
+            console.log('WNAP: Error cleaning localStorage:', e);
         }
         
         // Check if audio already exists
