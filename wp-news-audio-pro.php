@@ -38,7 +38,8 @@ define('WNAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WNAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WNAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('WNAP_ENVATO_ITEM_ID', defined('WNAP_ITEM_ID') ? WNAP_ITEM_ID : ''); // Update after CodeCanyon approval
-define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : 'IRXxacDkuYPM8lFe9NCNZ3rh3RMQTp49'); // Default API token
+// Note: API token is intentionally hardcoded as default but can be overridden via wp-config.php with WNAP_API_TOKEN
+define('WNAP_ENVATO_API_TOKEN', defined('WNAP_API_TOKEN') ? WNAP_API_TOKEN : 'IRXxacDkuYPM8lFe9NCNZ3rh3RMQTp49');
 
 // Support contact information - intentionally hardcoded for security (cannot be changed by site admin)
 define('WNAP_SUPPORT_EMAIL', defined('WNAP_EMAIL') ? WNAP_EMAIL : 'info.geniusplugtechnology@gmail.com');

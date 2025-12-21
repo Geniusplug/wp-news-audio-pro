@@ -31,12 +31,11 @@ class WNAP_License_Manager {
     private $license_option = 'wnap_license';
     
     /**
-     * Test code (encrypted)
-     * This is the hash of 'WNAP-DEV-TEST-2025'
+     * Test code constant
      * 
      * @var string
      */
-    private $test_code_hash = 'e8b8c5e9d5f5c1e8a4b7e9c6d8e5f2a3b4c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0';
+    const TEST_CODE = 'WNAP-DEV-TEST-2025';
     
     /**
      * Test code expiration days
@@ -135,7 +134,7 @@ class WNAP_License_Manager {
             }
             
             // Check if code matches
-            if ($code !== 'WNAP-DEV-TEST-2025') {
+            if ($code !== self::TEST_CODE) {
                 return false;
             }
             
@@ -284,7 +283,7 @@ class WNAP_License_Manager {
             }
             
             // Test code was entered but domain is not localhost
-            if ($code === 'WNAP-DEV-TEST-2025' && !$this->is_localhost()) {
+            if ($code === self::TEST_CODE && !$this->is_localhost()) {
                 return array(
                     'success' => false,
                     'message' => __('Test code only works on localhost/development environments. Please use a valid purchase code on live sites.', 'wp-news-audio-pro'),
