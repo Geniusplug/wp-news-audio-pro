@@ -222,6 +222,8 @@ class WP_News_Audio_Pro {
             'show_on_home' => true,  // Show button on home by default
             'exclude_pages' => '',
             'exclude_urls' => '',
+            'auto_hide_delay' => 30, // Auto-hide after 30 seconds
+            'auto_reopen_delay' => 60, // Auto-reopen after 60 seconds
         );
         
         add_option('wnap_settings', $default_settings);
